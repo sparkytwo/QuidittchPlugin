@@ -1,0 +1,21 @@
+name: QuidditchPlugin
+version: '1.0-SNAPSHOT'
+main: me.pacenstein.quidditch.QuidditchPlugin
+api-version: '1.20'
+depend: [WorldGuard]
+commands:
+  jointeam:
+    description: Join a team.
+    usage: "/jointeam <team>"
+  leaveteam:
+    description: Leave your current team.
+    usage: "/leaveteam"
+  chooseclass:
+    description: Choose your Quidditch class.
+    usage: "/chooseclass <class>"
+  spawnSnitch: # Add this
+    description: Spawn the Snitch.
+    usage: "/spawnsnitch"
+  spawnquaffle:
+    description: Spawns a Quaffle at the player's location.
+    usage: "/spawnquaffle"
