@@ -1,0 +1,11 @@
+me\pacenstein\quidditch\RoleCommandExecutor.class
+me\pacenstein\quidditch\QuidditchRole.class
+me\pacenstein\quidditch\QuaffleGoalListener.class
+me\pacenstein\quidditch\RoleManager.class
+me\pacenstein\quidditch\TeamCommandExecutor.class
+me\pacenstein\quidditch\QuidditchEventListener.class
+me\pacenstein\quidditch\QuidditchPlugin.class
+me\pacenstein\quidditch\QuidditchGame$1.class
+me\pacenstein\quidditch\QuidditchGame.class
+me\pacenstein\quidditch\QuaffleCommandExecutor.class
+me\pacenstein\quidditch\SnitchCommandExecutor.class
