@@ -3,8 +3,10 @@ package me.pacenstein.quidditch;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Bat;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -27,7 +29,10 @@ public class QuidditchGame {
     private JavaPlugin plugin;
 
     public QuidditchGame(JavaPlugin plugin) {
+
         this.plugin = plugin;
+        startQuaffleTracking(); // Start tracking thrown Quaffles
+
     }
 
     public void setup() {
@@ -89,4 +94,56 @@ public class QuidditchGame {
             }
         }).runTaskTimer(plugin, 20L, 20L);
     }
+
+    public void startQuaffleTracking() {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                for (World world : Bukkit.getServer().getWorlds()) {
+                    for (Entity entity : world.getEntities()) {
+                        if (entity instanceof Item && entity.hasMetadata("Quaffle")) {
+                            Location location = entity.getLocation();
+                            if (isInGoal(location, "teamA") || isInGoal(location, "teamB")) {
+                                entity.remove(); // Remove the Quaffle from the world
+                                // Announce goal and which team scored if needed
+                                Bukkit.getServer().broadcastMessage("A goal was scored!");
+                            }
+                        }
+                    }
+                }
+            }
+        }.runTaskTimer(plugin, 0, 20); // Adjust the second parameter for the period
+    }
+
+    public boolean isInGoal(Location location, String team) {
+        double minX, minY, minZ, maxX, maxY, maxZ;
+
+        // Define goal area for teamA directly within the code
+        if ("teamA".equalsIgnoreCase(team)) {
+            minX = -203;
+            minY = 89;
+            minZ = -200;
+            maxX = -192;
+            maxY = 95;
+            maxZ = -198;
+        } else if ("teamB".equalsIgnoreCase(team)) {
+            minX = -203;
+            minY = 89;
+            minZ = -200;
+            maxX = -192;
+            maxY = 95;
+            maxZ = -198;
+        } else {
+            System.out.println("[QuidditchPlugin] Error: Team not recognized.");
+            return false;
+        }
+
+        boolean isInGoal = location.getX() >= minX && location.getX() <= maxX &&
+                location.getY() >= minY && location.getY() <= maxY &&
+                location.getZ() >= minZ && location.getZ() <= maxZ;
+
+        return isInGoal;
+    }
 }
+
+

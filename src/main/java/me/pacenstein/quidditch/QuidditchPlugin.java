@@ -9,6 +9,8 @@ public class QuidditchPlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        saveDefaultConfig(); // Ensures config.yml is copied out of your jar
+        reloadConfig(); // Loads config.yml into memory
         quidditchGame = new QuidditchGame(this);
         quidditchGame.setup();
 
@@ -22,6 +24,8 @@ public class QuidditchPlugin extends JavaPlugin {
         this.getCommand("spawnquaffle").setExecutor(new QuaffleCommandExecutor(this));
 
         getServer().getPluginManager().registerEvents(new QuidditchEventListener(this), this);
+        getServer().getPluginManager().registerEvents(new QuaffleGoalListener(this, quidditchGame), this);
+
 
     }
 

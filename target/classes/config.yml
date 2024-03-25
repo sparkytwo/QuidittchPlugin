@@ -1,0 +1,21 @@
+goals:
+  teamA:
+    world: world
+    min:
+      x: -203
+      y: 89
+      z: -200
+    max:
+      x: -192
+      y: 95
+      z: -198
+  teamB:
+    world: world
+    min:
+      x: -203
+      y: 89
+      z: -200
+    max:
+      x: -192
+      y: 95
+      z: -198
