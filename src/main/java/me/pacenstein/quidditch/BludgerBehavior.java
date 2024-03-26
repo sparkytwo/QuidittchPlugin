@@ -12,58 +12,76 @@ import org.bukkit.util.Vector;
 import java.util.Collection;
 import java.util.Random;
 
+/**
+ * This class defines the behavior of a Bludger in the Quidditch game.
+ * It targets players and moves towards them to simulate being hit by the Bludger.
+ * Upon getting close enough to a player, certain effects are applied to mimic the impact.
+ */
 public class BludgerBehavior extends BukkitRunnable {
-    private final JavaPlugin plugin;
-    private final Bat bludgerBat;
-    private Player target;
+    private final JavaPlugin plugin; // Reference to the plugin for accessing server functionalities
+    private final Bat bludgerBat;    // The Bludger entity
+    private Player target;           // The current target player
 
+    /**
+     * Constructs a new BludgerBehavior instance.
+     *
+     * @param plugin      The plugin instance
+     * @param bludgerBat  The bat entity representing the Bludger
+     * @param armorStand  An unused parameter in this context, potentially for future use or visual effects
+     */
     public BludgerBehavior(JavaPlugin plugin, Bat bludgerBat, ArmorStand armorStand) {
         this.plugin = plugin;
         this.bludgerBat = bludgerBat;
-        this.target = null;
+        this.target = null; // Initialize with no target
     }
 
     @Override
     public void run() {
-        // Target selection
+        // Periodically check and update the Bludger's behavior
         if (target == null || !target.isOnline()) {
+            // Select a new target if the current one is null or not online
             target = selectRandomPlayer();
         }
 
+        // Move the Bludger towards the target if one exists
         if (target != null) {
-            // Movement towards target
             Location bludgerLocation = bludgerBat.getLocation();
             Location targetLocation = target.getLocation();
             Vector direction = targetLocation.toVector().subtract(bludgerLocation.toVector()).normalize();
-            bludgerBat.setVelocity(direction.multiply(1.0)); // Increased speed
+            bludgerBat.setVelocity(direction); // Move the Bludger towards the target
         }
 
+        // Check if the Bludger has hit any players
         checkBludgerHit();
     }
 
-
-
+    /**
+     * Checks if the Bludger has hit a player.
+     * If so, it applies effects to simulate the impact of the hit.
+     */
     private void checkBludgerHit() {
-        // Assuming a hit radius of 2 blocks for simplicity
-        double hitRadius = 2.0;
+        double hitRadius = 2.0; // Define a radius within which players are considered hit
         Location bludgerLocation = bludgerBat.getLocation();
-
-        // Check for nearby players
         Collection<Player> nearbyPlayers = bludgerLocation.getNearbyPlayers(hitRadius);
-        for (Player player : nearbyPlayers) {
-            // Logic to prevent hitting the same player too frequently, if desired
 
-            // Disable the player's flight
+        for (Player player : nearbyPlayers) {
+            // Prevent the same player from being hit too frequently, if necessary
+
+            // Disable the player's ability to fly, simulating being knocked off their broom
             if (player.getAllowFlight()) {
                 player.setFlying(false);
                 player.setAllowFlight(false);
                 player.sendMessage(ChatColor.RED + "You've been hit by a Bludger! Remount your broom to fly again.");
-
-                // Optional: Implement a cooldown before the player can fly again
+                // Consider implementing a cooldown before the player can fly again
             }
         }
     }
 
+    /**
+     * Selects a random player from the online players as the Bludger's new target.
+     *
+     * @return A randomly selected Player, or null if no players are online.
+     */
     private Player selectRandomPlayer() {
         Collection<? extends Player> players = plugin.getServer().getOnlinePlayers();
         int size = players.size();
@@ -72,11 +90,11 @@ public class BludgerBehavior extends BukkitRunnable {
             int i = 0;
             for (Player player : players) {
                 if (i == item) {
-                    return player; // This should be modified to ensure the player is part of the game and not already a target
+                    return player; // Future improvement: ensure the player is part of the game
                 }
                 i++;
             }
         }
-        return null;
+        return null; // Return null if no suitable player was found
     }
 }

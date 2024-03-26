@@ -1,65 +1,71 @@
 package me.pacenstein.quidditch;
 
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.entity.*;
+import org.bukkit.ChatColor;
+import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerPickupItemEvent;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.metadata.FixedMetadataValue;
-import org.bukkit.metadata.MetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
 
-
+/**
+ * This class listens for player interactions with entities within the Quidditch game.
+ * It includes logic for handling interactions with the Snitch by seekers.
+ */
 public class QuidditchEventListener implements Listener {
     private JavaPlugin plugin;
+    private RoleManager roleManager;
+    private QuidditchGame quidditchGame;
 
-    public QuidditchEventListener(JavaPlugin plugin) {
+    /**
+     * Constructs a new QuidditchEventListener.
+     *
+     * @param plugin The JavaPlugin instance for the Bukkit plugin.
+     * @param roleManager A manager for handling player roles within the game.
+     * @param quidditchGame The game instance managing the current state of the Quidditch match.
+     */
+    public QuidditchEventListener(JavaPlugin plugin, RoleManager roleManager, QuidditchGame quidditchGame) {
         this.plugin = plugin;
+        this.roleManager = roleManager;
+        this.quidditchGame = quidditchGame;
     }
 
+    /**
+     * Handles player interactions with entities, specifically aiming to catch the Snitch.
+     *
+     * @param event The event triggered when a player interacts with an entity.
+     */
     @EventHandler
     public void onPlayerInteractAtEntity(PlayerInteractAtEntityEvent event) {
+        Player player = event.getPlayer();
+
+        // Ensure the game is currently running
+        if (!quidditchGame.isGameRunning()) {
+            player.sendMessage(ChatColor.RED + "The game has not started yet.");
+            return; // Exit if the game hasn't started
+        }
+
         Entity entity = event.getRightClicked();
 
-        // Check if the entity has the metadata indicating it's the Snitch
-        if (entity.hasMetadata("F_ITEM")) {
-            // Broadcast the message
-            Bukkit.broadcastMessage(event.getPlayer().getName() + " has caught the Snitch!");
+        // Check if the entity is an ArmorStand tagged as the Snitch
+        if (entity instanceof ArmorStand && entity.hasMetadata("Snitch")) {
+            QuidditchRole playerRole = roleManager.getPlayerRole(player);
 
-            // Logic for handling the catch, e.g., awarding points, ending the game, etc.
-
-            // Remove the Snitch entities
-            // If the entity is an ArmorStand, its parent Bat needs to be removed
-            if (entity instanceof ArmorStand && entity.getVehicle() instanceof Bat) {
-                Bat bat = (Bat) entity.getVehicle();
-                bat.remove(); // This will remove the Bat and, consequently, the ArmorStand
-            } else if (entity instanceof Bat) {
-                entity.remove(); // Directly remove the Bat if that's what was interacted with
-            }
-
-            // Cancel the event to prevent default interactions
-            event.setCancelled(true);
-        }
-    }
-
-    @EventHandler
-    public void onPlayerInteract(PlayerInteractEvent event) {
-        Player player = event.getPlayer();
-        if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-            ItemStack itemInHand = player.getInventory().getItemInMainHand();
-            if (itemInHand != null && itemInHand.hasItemMeta() && "Quaffle".equals(itemInHand.getItemMeta().getDisplayName())) {
-                // Simulate throwing the Quaffle
-                Item quaffle = player.getWorld().dropItem(player.getEyeLocation(), itemInHand.clone());
-                quaffle.setMetadata("Quaffle", new FixedMetadataValue(plugin, true)); // Mark the Quaffle for tracking
-                quaffle.setVelocity(player.getLocation().getDirection().multiply(1.5)); // Adjust multiplier as needed
-                player.getInventory().setItemInMainHand(new ItemStack(Material.AIR)); // Remove from player's inventory
-
-                event.setCancelled(true);
+            // Ensure only Seekers can catch the Snitch
+            if (playerRole != QuidditchRole.SEEKER) {
+                player.sendMessage(ChatColor.RED + "Only Seekers can catch the Snitch!");
+                event.setCancelled(true); // Prevent non-seekers from catching the Snitch
+            } else {
+                // Award points to the seeker's team and determine the game's outcome
+                if (quidditchGame.teamA.getEntries().contains(player.getName())) {
+                    quidditchGame.scoreTeamA += 150; // Award points to Team A
+                } else if (quidditchGame.teamB.getEntries().contains(player.getName())) {
+                    quidditchGame.scoreTeamB += 150; // Award points to Team B
+                }
+                // Determine the winner and end the game
+                String winningTeam = quidditchGame.determineWinner();
+                quidditchGame.endGame(winningTeam);
             }
         }
     }

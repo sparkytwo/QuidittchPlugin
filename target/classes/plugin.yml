@@ -21,4 +21,16 @@ commands:
     usage: "/spawnquaffle"
   spawnbludger:
     description: Spawns a Bludger at the player's location.
-    usage: /<command>
+    usage: "/spawnbludger"
+  clearclass:
+    description: Clear your current Quidditch role.
+    usage: "/clearclass"
+  startgame:
+    description: Start a Quidditch game.
+    usage: "/startgame"
+  endgame:
+    description: End the current Quidditch game.
+    usage: "/endgame"
+  joinquidditch:
+    description: Join a Quidditch game.
+    usage: /joinquidditch
