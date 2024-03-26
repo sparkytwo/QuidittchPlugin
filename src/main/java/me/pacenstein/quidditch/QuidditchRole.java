@@ -1,10 +1,10 @@
 package me.pacenstein.quidditch;
 
 public enum QuidditchRole {
-    GUARDIAN("Guardian"),
-    HUNTER("Hunter"),
-    SEEKER("Seeker"),
-    DRIVER("Driver");
+    CHASER("Chaser"),
+    BEATER("Beater"),
+    KEEPER("Keeper"),
+    HUNTER("Hunter");
 
     private final String displayName;
 

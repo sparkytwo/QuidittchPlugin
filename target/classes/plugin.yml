@@ -19,3 +19,6 @@ commands:
   spawnquaffle:
     description: Spawns a Quaffle at the player's location.
     usage: "/spawnquaffle"
+  spawnbludger:
+    description: Spawns a Bludger at the player's location.
+    usage: /<command>

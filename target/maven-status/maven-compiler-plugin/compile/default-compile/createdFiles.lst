@@ -6,7 +6,11 @@ me\pacenstein\quidditch\RoleManager.class
 me\pacenstein\quidditch\TeamCommandExecutor.class
 me\pacenstein\quidditch\QuidditchEventListener.class
 me\pacenstein\quidditch\QuidditchGame$1.class
+me\pacenstein\quidditch\BeaterInteractionListener.class
 me\pacenstein\quidditch\QuaffleCommandExecutor.class
+me\pacenstein\quidditch\BludgerBehavior.class
 me\pacenstein\quidditch\QuidditchPlugin.class
+me\pacenstein\quidditch\BludgerSpawnCommandExecutor.class
 me\pacenstein\quidditch\QuidditchGame.class
+me\pacenstein\quidditch\BroomstickFlightListener.class
 me\pacenstein\quidditch\SnitchCommandExecutor.class

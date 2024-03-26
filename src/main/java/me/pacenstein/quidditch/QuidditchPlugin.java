@@ -22,9 +22,13 @@ public class QuidditchPlugin extends JavaPlugin {
         this.getCommand("chooseclass").setExecutor(new RoleCommandExecutor(roleManager, quidditchGame)); // Modified
         this.getCommand("spawnsnitch").setExecutor(new SnitchCommandExecutor(quidditchGame));
         this.getCommand("spawnquaffle").setExecutor(new QuaffleCommandExecutor(this));
+        this.getCommand("spawnbludger").setExecutor(new BludgerSpawnCommandExecutor(this));
 
         getServer().getPluginManager().registerEvents(new QuidditchEventListener(this), this);
         getServer().getPluginManager().registerEvents(new QuaffleGoalListener(this, quidditchGame), this);
+        getServer().getPluginManager().registerEvents(new BeaterInteractionListener(roleManager), this);
+        getServer().getPluginManager().registerEvents(new BeaterInteractionListener(new RoleManager()), this);
+        getServer().getPluginManager().registerEvents(new BroomstickFlightListener(), this);
 
 
     }

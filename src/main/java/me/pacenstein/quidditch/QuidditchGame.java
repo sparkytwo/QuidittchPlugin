@@ -26,12 +26,26 @@ public class QuidditchGame {
     public Team teamA;
     public Team teamB;
 
+    private Location[] teamAGoals = new Location[3];
+    private Location[] teamBGoals = new Location[3];
+    private int radius = 4; // Radius of the goals
+
     private JavaPlugin plugin;
 
     public QuidditchGame(JavaPlugin plugin) {
 
         this.plugin = plugin;
         startQuaffleTracking(); // Start tracking thrown Quaffles
+
+        // Initialize team A's goals
+        teamAGoals[0] = new Location(Bukkit.getWorld("world"), -36, -9, -77); // Adjust Y value as needed
+        teamAGoals[1] = new Location(Bukkit.getWorld("world"), -25, -1, -77); // Adjust coordinates as needed
+        teamAGoals[2] = new Location(Bukkit.getWorld("world"), -14, -5, -77); // Adjust coordinates as needed
+
+        // Initialize team B's goals
+        teamBGoals[0] = new Location(Bukkit.getWorld("world"), -36, -6, 57); // Adjust Y value as needed
+        teamBGoals[1] = new Location(Bukkit.getWorld("world"), -26, -1, 57); // Adjust coordinates as needed
+        teamBGoals[2] = new Location(Bukkit.getWorld("world"), -14, -9, 57); // Adjust coordinates as needed
 
     }
 
@@ -116,34 +130,40 @@ public class QuidditchGame {
     }
 
     public boolean isInGoal(Location location, String team) {
-        double minX, minY, minZ, maxX, maxY, maxZ;
+        // Arrays to hold the center locations of the goals for teams A and B
+        Location[] centersA = new Location[3];
+        Location[] centersB = new Location[3];
+        int radius = 5; // Assuming a radius of 3 for the goals
 
-        // Define goal area for teamA directly within the code
-        if ("teamA".equalsIgnoreCase(team)) {
-            minX = -203;
-            minY = 89;
-            minZ = -200;
-            maxX = -192;
-            maxY = 95;
-            maxZ = -198;
-        } else if ("teamB".equalsIgnoreCase(team)) {
-            minX = -203;
-            minY = 89;
-            minZ = -200;
-            maxX = -192;
-            maxY = 95;
-            maxZ = -198;
-        } else {
+        // Populate the arrays with actual center points of your goals
+        centersA[0] = new Location(location.getWorld(), -36, -9, -77);
+        centersA[1] = new Location(location.getWorld(), -25, -1, -77);
+        centersA[2] = new Location(location.getWorld(), -14, -5, -77);
+        centersB[0] = new Location(location.getWorld(), -36, -6, 57);
+        centersB[1] = new Location(location.getWorld(), -26, -1, 57);
+        centersB[2] = new Location(location.getWorld(), -14, -9, 57);
+
+        // Determine which team's goals to check based on the input parameter
+        Location[] teamGoals = "teamA".equalsIgnoreCase(team) ? centersA : "teamB".equalsIgnoreCase(team) ? centersB : null;
+
+        // If the team is not recognized, print an error and return false
+        if (teamGoals == null) {
             System.out.println("[QuidditchPlugin] Error: Team not recognized.");
             return false;
         }
 
-        boolean isInGoal = location.getX() >= minX && location.getX() <= maxX &&
-                location.getY() >= minY && location.getY() <= maxY &&
-                location.getZ() >= minZ && location.getZ() <= maxZ;
+        // Check if the location is within the radius of any of the team's goals
+        for (Location center : teamGoals) {
+            if (center.distance(location) <= radius) {
+                return true; // The location is within the radius of one of the team's goals
+            }
+        }
 
-        return isInGoal;
+        return false; // The location is not within the radius of any of the team's goals
     }
+
+
+
 }
 
 
