@@ -44,7 +44,7 @@ public class QuidditchPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new QuaffleThrowListener(this, quidditchGame), this);
         getServer().getPluginManager().registerEvents(new QuidditchEventListener(this, roleManager, quidditchGame), this);
         getServer().getPluginManager().registerEvents(new GUIEventListener(quidditchGame), this);
-
+        
         // Setup commands for starting and ending the game with permission checks
         setupGameControlCommands();
     }

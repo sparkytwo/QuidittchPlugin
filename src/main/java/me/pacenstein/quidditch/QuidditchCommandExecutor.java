@@ -22,7 +22,8 @@ public class QuidditchCommandExecutor implements CommandExecutor {
 
         if (command.getName().equalsIgnoreCase("joinquidditch")) {
             Player player = (Player) sender;
-            quidditchGame.openSelectionGUI(player);
+            // Now calling openTeamSelectionGUI instead of openSelectionGUI
+            quidditchGame.openTeamSelectionGUI(player);
             return true;
         }
 

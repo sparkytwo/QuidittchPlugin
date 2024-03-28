@@ -353,7 +353,76 @@ public class QuidditchGame {
         player.openInventory(gui);
     }
 
+    public void openTeamSelectionGUI(Player player) {
+        Inventory gui = Bukkit.createInventory(null, 9, "Select Team");
 
+        // Team A selection
+        ItemStack teamAItem = new ItemStack(Material.RED_WOOL);
+        ItemMeta teamAMeta = teamAItem.getItemMeta();
+        if (teamAMeta != null) {
+            teamAMeta.setDisplayName(ChatColor.RED + "Join Team A");
+            teamAItem.setItemMeta(teamAMeta);
+        }
+
+        // Team B selection
+        ItemStack teamBItem = new ItemStack(Material.BLUE_WOOL);
+        ItemMeta teamBMeta = teamBItem.getItemMeta();
+        if (teamBMeta != null) {
+            teamBMeta.setDisplayName(ChatColor.BLUE + "Join Team B");
+            teamBItem.setItemMeta(teamBMeta);
+        }
+
+        // Setting items in the GUI
+        gui.setItem(3, teamAItem);
+        gui.setItem(5, teamBItem);
+
+        player.openInventory(gui);
+    }
+
+    public void openClassSelectionGUI(Player player) {
+        Inventory gui = Bukkit.createInventory(null, 27, "Select Class");
+
+        // Chaser class selection
+        ItemStack chaserItem = new ItemStack(Material.LEATHER_HELMET);
+        ItemMeta chaserMeta = chaserItem.getItemMeta();
+        if (chaserMeta != null) {
+            chaserMeta.setDisplayName(ChatColor.GOLD + "Choose Chaser");
+            chaserItem.setItemMeta(chaserMeta);
+        }
+
+        // Beater class selection
+        ItemStack beaterItem = new ItemStack(Material.IRON_SWORD);
+        ItemMeta beaterMeta = beaterItem.getItemMeta();
+        if (beaterMeta != null) {
+            beaterMeta.setDisplayName(ChatColor.GRAY + "Choose Beater");
+            beaterItem.setItemMeta(beaterMeta);
+        }
+
+        // Keeper class selection
+        ItemStack keeperItem = new ItemStack(Material.SHIELD);
+        ItemMeta keeperMeta = keeperItem.getItemMeta();
+        if (keeperMeta != null) {
+            keeperMeta.setDisplayName(ChatColor.GREEN + "Choose Keeper");
+            keeperItem.setItemMeta(keeperMeta);
+        }
+
+        // Seeker class selection
+        ItemStack seekerItem = new ItemStack(Material.GOLDEN_BOOTS);
+        ItemMeta seekerMeta = seekerItem.getItemMeta();
+        if (seekerMeta != null) {
+            seekerMeta.setDisplayName(ChatColor.YELLOW + "Choose Seeker");
+            seekerItem.setItemMeta(seekerMeta);
+        }
+
+        // Setting items in the GUI for selection
+        gui.setItem(10, chaserItem);
+        gui.setItem(12, beaterItem);
+        gui.setItem(14, keeperItem);
+        gui.setItem(16, seekerItem);
+
+        // Open the inventory GUI for the player
+        player.openInventory(gui);
+    }
 
 
 
