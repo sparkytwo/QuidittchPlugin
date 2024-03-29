@@ -38,7 +38,7 @@ public class ShowLobbyCommandExecutor implements CommandExecutor {
 
         // For each player in the lobby, create an item stack representing them
         for (Player lobbyPlayer : quidditchGame.getLobbyPlayers()) {
-            ItemStack playerItem = new ItemStack(Material.PLAYER_HEAD); // Use player head or any other appropriate item
+            ItemStack playerItem = new ItemStack(Material.PLAYER_HEAD); // Use player head
             ItemMeta meta = playerItem.getItemMeta();
             if (meta != null) {
                 meta.setDisplayName(ChatColor.GREEN + lobbyPlayer.getName());
@@ -46,8 +46,13 @@ public class ShowLobbyCommandExecutor implements CommandExecutor {
                 List<String> lore = new ArrayList<>();
                 String teamName = quidditchGame.getTeamForPlayer(lobbyPlayer);
                 lore.add(ChatColor.GRAY + "Team: " + (teamName != null ? teamName : "Not assigned"));
-                meta.setLore(lore);
 
+                // Fetch the player's role
+                QuidditchRole playerRole = quidditchGame.getPlayerRoles().get(lobbyPlayer); // Assuming a getPlayerRoles() method exists
+                String roleName = playerRole != null ? playerRole.name() : "No Role Assigned";
+                lore.add(ChatColor.GOLD + "Role: " + roleName);
+
+                meta.setLore(lore);
                 playerItem.setItemMeta(meta);
             }
             gui.addItem(playerItem);

@@ -23,7 +23,8 @@ public class QuidditchPlugin extends JavaPlugin {
         quidditchGame.setup(); // Set up game environment, including teams and scoreboards
 
         // Initialize the role management system
-        roleManager = new RoleManager();
+        RoleManager roleManager = new RoleManager();
+        quidditchGame.setRoleManager(roleManager); // Set the role manager
 
         // Register command executors for game commands
         this.getCommand("jointeam").setExecutor(new TeamCommandExecutor(quidditchGame));
@@ -31,8 +32,8 @@ public class QuidditchPlugin extends JavaPlugin {
         //this.getCommand("joinquidditchlobby").setExecutor(new JoinLobbyCommandExecutor(quidditchGame));
 
         // Note: RoleCommandExecutor now correctly receives both roleManager and quidditchGame
-        this.getCommand("chooseclass").setExecutor(new RoleCommandExecutor(roleManager, quidditchGame));
-        this.getCommand("clearclass").setExecutor(new RoleCommandExecutor(roleManager, quidditchGame));
+        //this.getCommand("chooseclass").setExecutor(new RoleCommandExecutor(roleManager, quidditchGame));
+        //this.getCommand("clearclass").setExecutor(new RoleCommandExecutor(roleManager, quidditchGame));
 
         // Register command executors for spawning game elements
         this.getCommand("spawnsnitch").setExecutor(new SnitchCommandExecutor(quidditchGame));

@@ -62,7 +62,11 @@
           <id>sk89q-repo</id>
           <url>https://maven.enginehub.org/repo/</url>
       </repository>
-
+      <repository>
+          <id>nexus</id>
+          <name>Lumine Public</name>
+          <url>https://mvn.lumine.io/repository/maven-public/</url>
+      </repository>
   </repositories>
 
   <dependencies>
@@ -71,6 +75,11 @@
           <artifactId>paper-api</artifactId>
           <version>1.20.4-R0.1-SNAPSHOT</version>
           <scope>provided</scope>
+      </dependency>
+      <dependency>
+          <groupId>com.ticxo.modelengine</groupId>
+          <artifactId>api</artifactId>
+          <version>R3.2.0</version>
       </dependency>
   </dependencies>
 </project>

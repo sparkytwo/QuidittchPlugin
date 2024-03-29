@@ -54,6 +54,7 @@ public class QuidditchEventListener implements Listener {
 
             // Ensure only Seekers can catch the Snitch
             if (playerRole != QuidditchRole.SEEKER) {
+
                 player.sendMessage(ChatColor.RED + "Only Seekers can catch the Snitch!");
                 event.setCancelled(true); // Prevent non-seekers from catching the Snitch
             } else {

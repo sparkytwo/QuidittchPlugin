@@ -7,15 +7,14 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.metadata.FixedMetadataValue;
-import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.scoreboard.Team;
-import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.util.Vector;
+
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,6 +26,16 @@ public class QuidditchGame {
     private List<Player> lobbyPlayers = new ArrayList<>();
     public List<Player> getLobbyPlayers() {
         return new ArrayList<>(lobbyPlayers); // Assuming lobbyPlayers is a List<Player>
+    }
+    public Map<Player, QuidditchRole> getPlayerRoles() {
+        return this.playerRoles;
+    }
+
+    private RoleManager roleManager; // Add this field
+
+    // Setter method
+    public void setRoleManager(RoleManager roleManager) {
+        this.roleManager = roleManager;
     }
 
     public String getTeamForPlayer(Player player) {
@@ -142,8 +151,18 @@ public class QuidditchGame {
             Bukkit.broadcastMessage("Team B scores! Current score: " + scoreTeamA + "-" + scoreTeamB);
         }
         updateScoreboard();
-    }
 
+        // After scoring, find the nearest keeper and spawn a new Quaffle
+        Location centerPitch = new Location(Bukkit.getWorld("quidditch"), 0, 50, 0); // Example center pitch location
+        Player nearestKeeper = findNearestKeeper(centerPitch);
+
+        if (nearestKeeper != null) {
+            plugin.getServer().broadcastMessage("Nearest keeper to the goal is: " + nearestKeeper.getName());
+            spawnQuaffle(nearestKeeper.getLocation());
+        } else {
+            plugin.getServer().broadcastMessage("No keeper found");
+        }
+    }
 
 
     public String determineWinner() {
@@ -173,15 +192,7 @@ public class QuidditchGame {
         spawnFlyingItem(location, snitchItemStack);
     }
 
-    public static void spawnQuaffle(Location location) {
-        ItemStack quaffleItemStack = new ItemStack(Material.LEATHER_HELMET); // Assuming a custom item or LEATHER_HELMET for simplicity
-        ItemMeta meta = quaffleItemStack.getItemMeta();
-        meta.setDisplayName("Quaffle");
-        quaffleItemStack.setItemMeta(meta);
 
-        location.getWorld().dropItem(location, quaffleItemStack);
-        Bukkit.broadcastMessage("The Quaffle is in play!");
-    }
 
     public void spawnFlyingItem(Location location, final ItemStack itemStack) {
         final Bat bat = location.getWorld().spawn(location, Bat.class);
@@ -195,6 +206,8 @@ public class QuidditchGame {
         armorStand.setCanPickupItems(false);
         armorStand.setRemoveWhenFarAway(false);
         armorStand.setMetadata("Snitch", new FixedMetadataValue(plugin, true));
+        armorStand.setCustomName("Snitch");
+        armorStand.setCustomNameVisible(true);
 
 
         bat.addPassenger(armorStand);
@@ -208,6 +221,24 @@ public class QuidditchGame {
                 }
             }
         }).runTaskTimer(plugin, 20L, 20L);
+    }
+
+    public Player findNearestKeeper(Location location) {
+        Player nearestKeeper = null;
+        double nearestDistanceSquared = Double.MAX_VALUE;
+
+        for (Map.Entry<Player, QuidditchRole> entry : playerRoles.entrySet()) {
+            if (entry.getValue() == QuidditchRole.KEEPER) {
+                Player player = entry.getKey();
+                double distanceSquared = player.getLocation().distanceSquared(location);
+                if (distanceSquared < nearestDistanceSquared) {
+                    nearestKeeper = player;
+                    nearestDistanceSquared = distanceSquared;
+                }
+            }
+        }
+
+        return nearestKeeper;
     }
 
     public void startQuaffleTracking() {
@@ -294,13 +325,18 @@ public class QuidditchGame {
             return;
         }
 
-        // Assign the role to the player
         playerRoles.put(player, role);
-        player.sendMessage(ChatColor.GREEN + "You are now a " + role.name() + ".");
+        roleManager.setPlayerRole(player, role);
 
-        // Equip player with colored armor based on their team
+
+
+
+        // Example: Modify this to use the role's display name if available
+        player.sendMessage(ChatColor.GREEN + "You are now a " + role.name() + ". Here's your Quidditch broomstick!");
+
         equipPlayerWithTeamArmor(player);
-        // Example logic to give role-specific items or effects
+        giveBroomstick(player); // Ensure this method exists and is similar to the one in RoleCommandExecutor
+
         switch (role) {
             case CHASER:
                 // Give Chaser items/effects
@@ -315,6 +351,16 @@ public class QuidditchGame {
                 // Give Seeker items/effects
                 break;
         }
+    }
+
+    private void giveBroomstick(Player player) {
+        ItemStack broomstick = new ItemStack(Material.STICK);
+        ItemMeta meta = broomstick.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(ChatColor.GOLD + "Quidditch Broomstick");
+            broomstick.setItemMeta(meta);
+        }
+        player.getInventory().addItem(broomstick);
     }
 
     private void equipPlayerWithTeamArmor(Player player) {
@@ -337,69 +383,6 @@ public class QuidditchGame {
             item.setItemMeta(meta);
         }
         return item;
-    }
-
-
-    public void openSelectionGUI(Player player) {
-        Inventory gui = Bukkit.createInventory(null, 27, "Select Team and Class");
-
-        // Team A selection
-        ItemStack teamAItem = new ItemStack(Material.RED_WOOL);
-        ItemMeta teamAMeta = teamAItem.getItemMeta();
-        if (teamAMeta != null) {
-            teamAMeta.setDisplayName(ChatColor.RED + "Join Team A");
-            teamAItem.setItemMeta(teamAMeta);
-        }
-
-        // Team B selection
-        ItemStack teamBItem = new ItemStack(Material.BLUE_WOOL);
-        ItemMeta teamBMeta = teamBItem.getItemMeta();
-        if (teamBMeta != null) {
-            teamBMeta.setDisplayName(ChatColor.BLUE + "Join Team B");
-            teamBItem.setItemMeta(teamBMeta);
-        }
-
-        // Chaser class selection
-        ItemStack chaserItem = new ItemStack(Material.LEATHER_HELMET);
-        ItemMeta chaserMeta = chaserItem.getItemMeta();
-        if (chaserMeta != null) {
-            chaserMeta.setDisplayName(ChatColor.GOLD + "Choose Chaser");
-            chaserItem.setItemMeta(chaserMeta);
-        }
-
-        // Beater class selection
-        ItemStack beaterItem = new ItemStack(Material.IRON_SWORD);
-        ItemMeta beaterMeta = beaterItem.getItemMeta();
-        if (beaterMeta != null) {
-            beaterMeta.setDisplayName(ChatColor.GRAY + "Choose Beater");
-            beaterItem.setItemMeta(beaterMeta);
-        }
-
-        // Keeper class selection
-        ItemStack keeperItem = new ItemStack(Material.SHIELD);
-        ItemMeta keeperMeta = keeperItem.getItemMeta();
-        if (keeperMeta != null) {
-            keeperMeta.setDisplayName(ChatColor.GREEN + "Choose Keeper");
-            keeperItem.setItemMeta(keeperMeta);
-        }
-
-        // Seeker class selection
-        ItemStack seekerItem = new ItemStack(Material.GOLDEN_BOOTS);
-        ItemMeta seekerMeta = seekerItem.getItemMeta();
-        if (seekerMeta != null) {
-            seekerMeta.setDisplayName(ChatColor.YELLOW + "Choose Seeker");
-            seekerItem.setItemMeta(seekerMeta);
-        }
-
-        // Setting items in the GUI
-        gui.setItem(10, teamAItem);
-        gui.setItem(12, teamBItem);
-        gui.setItem(14, chaserItem);
-        gui.setItem(15, beaterItem);
-        gui.setItem(16, keeperItem);
-        gui.setItem(17, seekerItem);
-
-        player.openInventory(gui);
     }
 
     public void openTeamSelectionGUI(Player player) {
@@ -538,6 +521,7 @@ public class QuidditchGame {
         }
 
         gameRunning = true; // Set the game state to running
+        spawnGameObjects();
         Bukkit.broadcastMessage(ChatColor.GREEN + "The Quidditch game has started with " + lobbyPlayers.size() + " players.");
 
         // Clear the lobby for the next game
@@ -579,6 +563,62 @@ public class QuidditchGame {
         // Check if player is in the lobby or has been assigned a team
         return lobbyPlayers.contains(player) || teamA.hasEntry(player.getName()) || teamB.hasEntry(player.getName());
     }
+
+    public void spawnGameObjects() {
+        World world = Bukkit.getWorlds().get(0);
+        Location spawnLocation = new Location(world, -26, -26, -9);
+
+        // Spawn Quaffle
+        spawnQuaffle(spawnLocation);
+
+        // Spawn Bludgers
+        spawnBludger(spawnLocation);
+        spawnBludger(spawnLocation);
+
+        // Spawn Snitch
+        spawnSnitch(spawnLocation);
+    }
+
+    public static void spawnQuaffle(Location location) {
+        ItemStack quaffleItemStack = new ItemStack(Material.LEATHER); // Assuming a custom item or LEATHER_HELMET for simplicity
+        ItemMeta meta = quaffleItemStack.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(ChatColor.GOLD + "Quaffle");
+            quaffleItemStack.setItemMeta(meta);
+        }
+        location.getWorld().dropItemNaturally(location, quaffleItemStack);
+        Bukkit.broadcastMessage(ChatColor.GREEN + "The Quaffle has been spawned!");
+    }
+
+    public void spawnBludger(Location location) {
+        // Spawn a Bat to represent the Bludger
+        Bat bat = location.getWorld().spawn(location, Bat.class);
+        // Make the Bat invisible for aesthetic purposes
+        bat.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 1, false, false));
+
+        // Spawn an ArmorStand for visual effects, if needed
+        ArmorStand armorStand = location.getWorld().spawn(location, ArmorStand.class);
+        armorStand.setGravity(false); // Prevent it from falling
+        armorStand.setVisible(false); // Make it invisible
+        armorStand.setSmall(true); // Optionally make it small
+        armorStand.setBasePlate(false); // Remove the base plate for aesthetics
+        armorStand.setCanPickupItems(false); // Prevent item pickup
+        armorStand.setCustomName("Bludger");
+        armorStand.setCustomNameVisible(true);
+
+        // Visual effect: Set a fire charge as the head of the ArmorStand, if desired for visuals
+        ItemStack fireChargeItem = new ItemStack(Material.FIRE_CHARGE);
+        armorStand.getEquipment().setHelmet(fireChargeItem);
+
+        // Attach the ArmorStand to the Bat to move together
+        bat.addPassenger(armorStand);
+
+        // Initialize and start the Bludger behavior task, if you have a specific behavior in mind
+        new BludgerBehavior(plugin, bat, armorStand).runTaskTimer(plugin, 0L, 20L); // Adjust the period as needed
+    }
+
+
+
 
 
 

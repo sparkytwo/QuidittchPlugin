@@ -1,5 +1,6 @@
 package me.pacenstein.quidditch;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Bat;
@@ -11,6 +12,9 @@ import org.bukkit.util.Vector;
 
 import java.util.Collection;
 import java.util.Random;
+import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 /**
  * This class defines the behavior of a Bludger in the Quidditch game.
@@ -59,21 +63,50 @@ public class BludgerBehavior extends BukkitRunnable {
      * Checks if the Bludger has hit a player.
      * If so, it applies effects to simulate the impact of the hit.
      */
+
     private void checkBludgerHit() {
         double hitRadius = 2.0; // Define a radius within which players are considered hit
         Location bludgerLocation = bludgerBat.getLocation();
         Collection<Player> nearbyPlayers = bludgerLocation.getNearbyPlayers(hitRadius);
 
         for (Player player : nearbyPlayers) {
-            // Prevent the same player from being hit too frequently, if necessary
+            // Additional check to ensure the player is indeed the target and within a more precise range if needed
+            if (player.equals(target)) {
+                // Check if the player is holding a Quaffle
+                if (isHoldingQuaffle(player)) {
+                    // Drop the Quaffle
+                    dropQuaffle(player);
 
-            // Disable the player's ability to fly, simulating being knocked off their broom
-            if (player.getAllowFlight()) {
-                player.setFlying(false);
-                player.setAllowFlight(false);
-                player.sendMessage(ChatColor.RED + "You've been hit by a Bludger! Remount your broom to fly again.");
-                // Consider implementing a cooldown before the player can fly again
+                    // Broadcast message
+                    Bukkit.broadcastMessage(ChatColor.YELLOW + player.getName() + " has dropped the Quaffle due to a Bludger hit!");
+
+                    // Reset target to null to select a new target next tick
+                    target = null;
+                }
+
+                // Logic to disable the player's ability to fly, as before
+                if (player.getAllowFlight()) {
+                    player.setFlying(false);
+                    player.setAllowFlight(false);
+                    player.sendMessage(ChatColor.RED + "You've been hit by a Bludger! Remount your broom to fly again.");
+                }
             }
+        }
+    }
+
+    private boolean isHoldingQuaffle(Player player) {
+        ItemStack itemInHand = player.getInventory().getItemInMainHand();
+        return itemInHand != null && itemInHand.hasItemMeta() && itemInHand.getItemMeta().hasDisplayName()
+                && ChatColor.stripColor(itemInHand.getItemMeta().getDisplayName()).equalsIgnoreCase("Quaffle");
+    }
+
+    private void dropQuaffle(Player player) {
+        ItemStack itemInHand = player.getInventory().getItemInMainHand();
+        if (isHoldingQuaffle(player)) {
+            // Drop the item in the world
+            player.getWorld().dropItemNaturally(player.getLocation(), itemInHand);
+            // Remove the item from the player's hand
+            player.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
         }
     }
 

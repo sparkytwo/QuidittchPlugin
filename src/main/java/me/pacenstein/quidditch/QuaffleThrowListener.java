@@ -44,7 +44,7 @@ public class QuaffleThrowListener implements Listener {
 
         // Check if the Quidditch game is currently active
         if (!quidditchGame.isGameRunning()) {
-            player.sendMessage(ChatColor.RED + "The game is not currently running.");
+            //player.sendMessage(ChatColor.RED + "The game is not currently running.");
             return; // Early exit if the game is not running
         }
 

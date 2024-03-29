@@ -73,9 +73,11 @@ public class BludgerSpawnCommandExecutor implements CommandExecutor {
         armorStand.setSmall(true); // Optionally make it small
         armorStand.setBasePlate(false); // Remove the base plate for aesthetics
         armorStand.setCanPickupItems(false); // Prevent item pickup
+        armorStand.setCustomName("Bludger");
+        armorStand.setCustomNameVisible(true);
 
         // Visual effect: Set a fire charge as the head of the ArmorStand
-        ItemStack fireChargeItem = new ItemStack(Material.FIRE_CHARGE);
+        ItemStack fireChargeItem = new ItemStack(Material.LEATHER_HORSE_ARMOR);
         armorStand.getEquipment().setHelmet(fireChargeItem);
 
         // Attach the ArmorStand to the Bat to move together

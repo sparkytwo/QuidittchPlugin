@@ -13,8 +13,10 @@ import org.bukkit.inventory.meta.ItemMeta;
  * Executes commands related to setting or clearing a player's role in Quidditch.
  * Allows players to select their Quidditch role or clear their current role assignment.
  */
-public class RoleCommandExecutor implements CommandExecutor {
-    private final RoleManager roleManager;
+
+public class RoleCommandExecutor {
+    ;
+    /*private final RoleManager roleManager;
     private final QuidditchGame quidditchGame;
 
     /**
@@ -23,7 +25,7 @@ public class RoleCommandExecutor implements CommandExecutor {
      * @param roleManager The role manager handling role assignments.
      * @param game The Quidditch game instance.
      */
-    public RoleCommandExecutor(RoleManager roleManager, QuidditchGame game) {
+    /*public RoleCommandExecutor(RoleManager roleManager, QuidditchGame game) {
         this.roleManager = roleManager;
         this.quidditchGame = game;
     }
@@ -67,7 +69,7 @@ public class RoleCommandExecutor implements CommandExecutor {
      *
      * @param player The player to receive the broomstick.
      */
-    private void giveBroomstick(Player player) {
+    /*private void giveBroomstick(Player player) {
         ItemStack broomstick = new ItemStack(Material.STICK); // Represents the Quidditch broomstick
         ItemMeta meta = broomstick.getItemMeta();
         if (meta != null) {
@@ -75,5 +77,5 @@ public class RoleCommandExecutor implements CommandExecutor {
             broomstick.setItemMeta(meta);
         }
         player.getInventory().addItem(broomstick); // Add the broomstick to the player's inventory
-    }
+    }*/
 }

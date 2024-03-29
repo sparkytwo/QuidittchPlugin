@@ -1,73 +1,70 @@
 package me.pacenstein.quidditch;
 
 import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
+import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-/**
- * Listener to handle broomstick flight toggling in a Quidditch game plugin.
- *
- * This class listens for player interactions with a specific item designated as a "Quidditch Broomstick"
- * and toggles the player's ability to fly, simulating broomstick flight within the game.
- */
 public class BroomstickFlightListener implements Listener {
-
-    /**
-     * Handles player interactions, specifically checking for right-click actions with a broomstick to toggle flight.
-     *
-     * @param event The player interaction event being handled.
-     */
     @EventHandler
-    public void onPlayerUseBroomstick(PlayerInteractEvent event) {
+
+    public void onPlayerSwitchItem(PlayerItemHeldEvent event) {
         Player player = event.getPlayer();
-        ItemStack item = player.getInventory().getItemInMainHand();
-        ItemMeta meta = item.getItemMeta();
+        ItemStack newItem = player.getInventory().getItem(event.getNewSlot());
+        ItemStack offHandItem = player.getInventory().getItemInOffHand();
 
-        // Validate that the item used is a stick (broomstick), has a name, and is right-clicked
-        if (item.getType() == Material.STICK && meta != null && meta.hasDisplayName() &&
-                ChatColor.stripColor(meta.getDisplayName()).equalsIgnoreCase("Quidditch Broomstick") &&
-                (event.getAction().toString().contains("RIGHT_CLICK"))) {
+        // Enable flight if the new item or the off-hand item is the broomstick
+        if (isBroomstick(newItem) || isBroomstick(offHandItem)) {
+            enableFlight(player);
+        } else {
+            // Disable flight if neither the main hand nor off-hand holds a broomstick
+                disableFlight(player);
 
-            // Toggle flight: disable if currently enabled, or enable if not
-            if (player.getAllowFlight()) {
-                disableFlight(player); // Disable flight if already flying
-            } else {
-                enableFlight(player); // Enable flight otherwise
-            }
         }
     }
 
-    /**
-     * Enables flight for the player, simulating taking off on a broomstick.
-     *
-     * @param player The player whose flight will be enabled.
-     */
-    private void enableFlight(Player player) {
-        player.setAllowFlight(true);
-        player.setFlying(true);
-        player.sendMessage(ChatColor.GREEN + "Broomstick flight enabled! You can now fly.");
+    @EventHandler
+    public void onPlayerToggleFlight(PlayerToggleFlightEvent event) {
+        Player player = event.getPlayer();
+        ItemStack mainHandItem = player.getInventory().getItemInMainHand();
+        ItemStack offHandItem = player.getInventory().getItemInOffHand();
 
-        // Implement a timer to automatically disable flight after a set period, if desired
-        // Example: Bukkit.getScheduler().runTaskLater(pluginInstance, () -> disableFlight(player), 20L * durationInSeconds);
+        // Check if the player is trying to fly without holding the broomstick in either hand
+        if (!isBroomstick(mainHandItem) && !isBroomstick(offHandItem)) {
+            event.setCancelled(true); // Prevent flight if not holding the broomstick
+            disableFlight(player);
+        }
     }
 
-    /**
-     * Disables flight for the player, simulating landing or falling off the broomstick.
-     *
-     * This method could be called automatically by a timer to limit flight duration.
-     *
-     * @param player The player whose flight will be disabled.
-     */
+    private boolean isBroomstick(ItemStack item) {
+        if (item != null && item.getType() == Material.STICK && item.hasItemMeta()) {
+            ItemMeta meta = item.getItemMeta();
+            if (meta.hasDisplayName() && ChatColor.stripColor(meta.getDisplayName()).equalsIgnoreCase("Quidditch Broomstick")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void enableFlight(Player player) {
+        if (!player.getAllowFlight()) {
+            player.setAllowFlight(true);
+            player.sendMessage(ChatColor.GREEN + "You can now fly with the broomstick.");
+        }
+    }
+
     private void disableFlight(Player player) {
-        if (player.isOnline()) {
+        if (player.getAllowFlight()) {
             player.setFlying(false);
             player.setAllowFlight(false);
-            player.sendMessage(ChatColor.RED + "Broomstick flight has worn off.");
+            player.sendMessage(ChatColor.RED + "Broomstick flight disabled.");
         }
     }
 }
