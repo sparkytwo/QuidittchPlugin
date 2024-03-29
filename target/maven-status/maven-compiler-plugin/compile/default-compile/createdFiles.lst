@@ -12,7 +12,6 @@ me\pacenstein\quidditch\QuidditchPlugin.class
 me\pacenstein\quidditch\BludgerSpawnCommandExecutor.class
 me\pacenstein\quidditch\JoinLobbyCommandExecutor.class
 me\pacenstein\quidditch\GUIEventListener.class
-me\pacenstein\quidditch\EndGameQuickCommandExecutor.class
 me\pacenstein\quidditch\RoleManager.class
 me\pacenstein\quidditch\TeamCommandExecutor.class
 me\pacenstein\quidditch\QuidditchEventListener.class

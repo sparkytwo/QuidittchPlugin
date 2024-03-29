@@ -40,9 +40,6 @@ commands:
   leavegame:
     description: Leave the current Quidditch game.
     usage: /leavegame
-  endgamequick:
-    description: End the Quidditch game prematurely.
-    usage: /endgamequick
   showlobby:
     description: Show the Quidditch lobby.
     usage: /showlobby

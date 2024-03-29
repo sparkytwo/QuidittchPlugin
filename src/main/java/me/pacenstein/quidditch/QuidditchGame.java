@@ -5,6 +5,7 @@ import org.bukkit.entity.*;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.potion.PotionEffect;
@@ -91,9 +92,29 @@ public class QuidditchGame {
         } else {
             Bukkit.broadcastMessage(ChatColor.GOLD + "The Quidditch game has ended. Congratulations to " + winningTeam + "!");
         }
+
+        getAllParticipants().forEach(player -> {
+            removePlayerFromTeam(player); // Remove player from their team
+            clearPlayerQuidditchItems(player); // Clear Quidditch-related items
+            playerRoles.remove(player); // Remove their class/role
+        });
+
         resetGameEnvironment();
         resetScores();
         // Additional cleanup as necessary
+    }
+
+    private List<Player> getAllParticipants() {
+        List<Player> participants = new ArrayList<>();
+        teamA.getEntries().forEach(name -> {
+            Player player = Bukkit.getPlayer(name);
+            if (player != null) participants.add(player);
+        });
+        teamB.getEntries().forEach(name -> {
+            Player player = Bukkit.getPlayer(name);
+            if (player != null) participants.add(player);
+        });
+        return participants;
     }
 
     private void setupTeams() {
@@ -277,6 +298,8 @@ public class QuidditchGame {
         playerRoles.put(player, role);
         player.sendMessage(ChatColor.GREEN + "You are now a " + role.name() + ".");
 
+        // Equip player with colored armor based on their team
+        equipPlayerWithTeamArmor(player);
         // Example logic to give role-specific items or effects
         switch (role) {
             case CHASER:
@@ -292,6 +315,28 @@ public class QuidditchGame {
                 // Give Seeker items/effects
                 break;
         }
+    }
+
+    private void equipPlayerWithTeamArmor(Player player) {
+        String teamName = getTeamForPlayer(player);
+        if (teamName == null) return; // No team assigned
+
+        Color armorColor = teamName.equals("Team A") ? Color.RED : Color.BLUE;
+
+        player.getInventory().setHelmet(createColoredArmor(Material.LEATHER_HELMET, armorColor));
+        player.getInventory().setChestplate(createColoredArmor(Material.LEATHER_CHESTPLATE, armorColor));
+        player.getInventory().setLeggings(createColoredArmor(Material.LEATHER_LEGGINGS, armorColor));
+        player.getInventory().setBoots(createColoredArmor(Material.LEATHER_BOOTS, armorColor));
+    }
+
+    private ItemStack createColoredArmor(Material material, Color color) {
+        ItemStack item = new ItemStack(material);
+        LeatherArmorMeta meta = (LeatherArmorMeta) item.getItemMeta();
+        if (meta != null) {
+            meta.setColor(color);
+            item.setItemMeta(meta);
+        }
+        return item;
     }
 
 
@@ -441,6 +486,8 @@ public class QuidditchGame {
 
     public void removePlayerFromLobby(Player player) {
         lobbyPlayers.remove(player);
+        clearPlayerQuidditchItems(player);
+
     }
 
     public void startLobbyCountdown() {
@@ -461,7 +508,6 @@ public class QuidditchGame {
 
     public void startGame() {
         // Check if there are enough players in the lobby to start the game.
-        // For testing purposes, we're considering 1 player as enough to start.
         if (lobbyPlayers.size() < 1) {
             Bukkit.broadcastMessage(ChatColor.RED + "Can't start the game with an empty queue.");
             return; // Exit the method if not enough players are in the lobby.
@@ -472,13 +518,24 @@ public class QuidditchGame {
             return; // Exit the method if a game is already running.
         }
 
-        // Assuming you have logic to assign players to teams and setup the game
-        // For simplicity, the example below assigns the first player to Team A and starts the game.
-        Player player = lobbyPlayers.get(0); // Get the first player in the lobby
-        assignPlayerToTeam(player, "TeamA"); // Assign the player to Team A for testing
+        World world = Bukkit.getWorlds().get(0);
+        // Teleportation logic for Team A
+        Location teamALocation = new Location(world, -25, -36, 0); // Adjust coordinates for Team A
+        for (String playerName : teamA.getEntries()) {
+            Player player = Bukkit.getPlayer(playerName);
+            if (player != null) {
+                player.teleport(teamALocation); // Teleport each Team A player
+            }
+        }
 
-        // Teleport the player to the game area, setup the game environment, etc.
-        // This is a simplified example, you'll need to expand this based on your game's requirements.
+        // Teleportation logic for Team B
+        Location teamBLocation = new Location(world, -25, -36, -9); // Adjust coordinates for Team B
+        for (String playerName : teamB.getEntries()) {
+            Player player = Bukkit.getPlayer(playerName);
+            if (player != null) {
+                player.teleport(teamBLocation); // Teleport each Team B player
+            }
+        }
 
         gameRunning = true; // Set the game state to running
         Bukkit.broadcastMessage(ChatColor.GREEN + "The Quidditch game has started with " + lobbyPlayers.size() + " players.");
@@ -487,40 +544,36 @@ public class QuidditchGame {
         lobbyPlayers.clear();
     }
 
+    private void teleportPlayerToGameStart(Player player, Location location) {
+        // Here you can add any checks for the player's class and adjust the location if needed
+        player.teleport(location);
+    }
+
     public void removePlayerFromTeam(Player player) {
         if (teamA.hasEntry(player.getName())) {
             teamA.removeEntry(player.getName());
         } else if (teamB.hasEntry(player.getName())) {
             teamB.removeEntry(player.getName());
         }
+        clearPlayerQuidditchItems(player);
+
     }
 
     public void clearPlayerQuidditchItems(Player player) {
         // Example: Clear specific items. Adjust according to your game's items
         player.getInventory().remove(Material.GOLD_NUGGET); // Assuming GOLD_NUGGET is the Snitch
         player.getInventory().remove(Material.LEATHER_HELMET); // Assuming LEATHER_HELMET is the Quaffle
-        // Add removal logic for any other custom items you use
+        clearPlayerArmor(player);
     }
 
-    public void endGamePrematurely() {
-        // End the game, clear the lobby and any game-specific setups
-        gameRunning = false;
-        lobbyPlayers.clear();
-        Bukkit.broadcastMessage(ChatColor.GOLD + "The Quidditch game has been ended prematurely.");
-
-        // Reset scores or any other game state as needed
-        scoreTeamA = 0;
-        scoreTeamB = 0;
-        updateScoreboard(); // Assuming you have a method to update the scoreboard
-
-        // Remove game-related entities. This might include removing spawned Snitches, Quaffles, etc.
-        // This is an example and needs to be tailored to how you spawn and manage these entities.
-        Bukkit.getWorlds().forEach(world -> world.getEntitiesByClasses(ArmorStand.class, Item.class).forEach(entity -> {
-            if (entity.hasMetadata("Snitch") || entity.hasMetadata("Quaffle")) {
-                entity.remove();
-            }
-        }));
+    private void clearPlayerArmor(Player player) {
+        player.getInventory().setHelmet(new ItemStack(Material.AIR));
+        player.getInventory().setChestplate(new ItemStack(Material.AIR));
+        player.getInventory().setLeggings(new ItemStack(Material.AIR));
+        player.getInventory().setBoots(new ItemStack(Material.AIR));
     }
+
+
 
     public boolean hasPlayerJoined(Player player) {
         // Check if player is in the lobby or has been assigned a team
