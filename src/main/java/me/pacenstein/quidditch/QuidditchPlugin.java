@@ -11,6 +11,7 @@ public class QuidditchPlugin extends JavaPlugin {
     private QuidditchGame quidditchGame;
     private RoleManager roleManager;
 
+
     @Override
     public void onEnable() {
         // Load configuration files and initialize game and role management
@@ -27,6 +28,8 @@ public class QuidditchPlugin extends JavaPlugin {
         // Register command executors for game commands
         this.getCommand("jointeam").setExecutor(new TeamCommandExecutor(quidditchGame));
         this.getCommand("leaveteam").setExecutor(new TeamCommandExecutor(quidditchGame));
+        //this.getCommand("joinquidditchlobby").setExecutor(new JoinLobbyCommandExecutor(quidditchGame));
+
         // Note: RoleCommandExecutor now correctly receives both roleManager and quidditchGame
         this.getCommand("chooseclass").setExecutor(new RoleCommandExecutor(roleManager, quidditchGame));
         this.getCommand("clearclass").setExecutor(new RoleCommandExecutor(roleManager, quidditchGame));
@@ -35,7 +38,11 @@ public class QuidditchPlugin extends JavaPlugin {
         this.getCommand("spawnsnitch").setExecutor(new SnitchCommandExecutor(quidditchGame));
         this.getCommand("spawnquaffle").setExecutor(new QuaffleCommandExecutor(this));
         this.getCommand("spawnbludger").setExecutor(new BludgerSpawnCommandExecutor(this));
-        this.getCommand("joinquidditch").setExecutor(new QuidditchCommandExecutor(quidditchGame));
+        // this.getCommand("joinquidditch").setExecutor(new QuidditchCommandExecutor(quidditchGame));
+        this.getCommand("joinquidditch").setExecutor(new JoinQuidditchCommandExecutor(quidditchGame));
+        this.getCommand("leavegame").setExecutor(new LeaveGameCommandExecutor(quidditchGame));
+        this.getCommand("showlobby").setExecutor(new ShowLobbyCommandExecutor(quidditchGame));
+
 
         // Register event listeners for in-game interactions
         getServer().getPluginManager().registerEvents(new BeaterInteractionListener(roleManager), this);

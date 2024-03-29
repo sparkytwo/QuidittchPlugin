@@ -15,11 +15,25 @@ import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.scoreboard.Team;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.Vector;
+
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class QuidditchGame {
     private Map<Player, QuidditchRole> playerRoles = new HashMap<>();
+    private List<Player> lobbyPlayers = new ArrayList<>();
+    public List<Player> getLobbyPlayers() {
+        return new ArrayList<>(lobbyPlayers); // Assuming lobbyPlayers is a List<Player>
+    }
+
+    public String getTeamForPlayer(Player player) {
+        if (teamA.hasEntry(player.getName())) return "Team A";
+        if (teamB.hasEntry(player.getName())) return "Team B";
+        return null; }
+
+
 
     private boolean gameRunning = false;
     private ScoreboardManager manager;
@@ -68,17 +82,7 @@ public class QuidditchGame {
         teamB.setPrefix("B-");
     }
 
-    public void startGame() {
-        if (!gameRunning) {
-            gameRunning = true;
-            Bukkit.broadcastMessage(ChatColor.GREEN + "The Quidditch game has started!");
-            // Lock team modifications and perform any necessary setup.
-            setupTeams();
-            spawnInitialElements(); // Spawn Snitch, Quaffles, and Bludgers
-        } else {
-            Bukkit.broadcastMessage(ChatColor.RED + "A game is already in progress.");
-        }
-    }
+
 
     public void endGame(String winningTeam) {
         gameRunning = false;
@@ -424,6 +428,119 @@ public class QuidditchGame {
         player.openInventory(gui);
     }
 
+    public void addPlayerToLobby(Player player) {
+        if (!lobbyPlayers.contains(player)) { // Check if the player is not already in the lobby
+            // Teleport player to the lobby area (you need to define the lobby location)
+            lobbyPlayers.add(player);
+            player.sendMessage(ChatColor.GREEN + "Welcome to the Quidditch lobby! Waiting for more players...");
+            // Consider adding a check here to start a lobby countdown if enough players have joined
+        } else {
+            player.sendMessage(ChatColor.YELLOW + "You are already in the lobby.");
+        }
+    }
+
+    public void removePlayerFromLobby(Player player) {
+        lobbyPlayers.remove(player);
+    }
+
+    public void startLobbyCountdown() {
+        new BukkitRunnable() {
+            int countdown = 30; // 30 seconds countdown
+
+            public void run() {
+                if (countdown > 0) {
+                    Bukkit.broadcastMessage(ChatColor.YELLOW + "Game starts in " + countdown + " seconds!");
+                    countdown--;
+                } else {
+                    startGame(); // Method to start the game, assign teams, teleport players, etc.
+                    this.cancel(); // Stop the countdown
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 20L); // 20L = 1 second in ticks
+    }
+
+    public void startGame() {
+        // Check if there are enough players in the lobby to start the game.
+        // For testing purposes, we're considering 1 player as enough to start.
+        if (lobbyPlayers.size() < 1) {
+            Bukkit.broadcastMessage(ChatColor.RED + "Can't start the game with an empty queue.");
+            return; // Exit the method if not enough players are in the lobby.
+        }
+
+        if (gameRunning) {
+            Bukkit.broadcastMessage(ChatColor.RED + "A game is already in progress.");
+            return; // Exit the method if a game is already running.
+        }
+
+        // Assuming you have logic to assign players to teams and setup the game
+        // For simplicity, the example below assigns the first player to Team A and starts the game.
+        Player player = lobbyPlayers.get(0); // Get the first player in the lobby
+        assignPlayerToTeam(player, "TeamA"); // Assign the player to Team A for testing
+
+        // Teleport the player to the game area, setup the game environment, etc.
+        // This is a simplified example, you'll need to expand this based on your game's requirements.
+
+        gameRunning = true; // Set the game state to running
+        Bukkit.broadcastMessage(ChatColor.GREEN + "The Quidditch game has started with " + lobbyPlayers.size() + " players.");
+
+        // Clear the lobby for the next game
+        lobbyPlayers.clear();
+    }
+
+    public void removePlayerFromTeam(Player player) {
+        if (teamA.hasEntry(player.getName())) {
+            teamA.removeEntry(player.getName());
+        } else if (teamB.hasEntry(player.getName())) {
+            teamB.removeEntry(player.getName());
+        }
+    }
+
+    public void clearPlayerQuidditchItems(Player player) {
+        // Example: Clear specific items. Adjust according to your game's items
+        player.getInventory().remove(Material.GOLD_NUGGET); // Assuming GOLD_NUGGET is the Snitch
+        player.getInventory().remove(Material.LEATHER_HELMET); // Assuming LEATHER_HELMET is the Quaffle
+        // Add removal logic for any other custom items you use
+    }
+
+    public void endGamePrematurely() {
+        // End the game, clear the lobby and any game-specific setups
+        gameRunning = false;
+        lobbyPlayers.clear();
+        Bukkit.broadcastMessage(ChatColor.GOLD + "The Quidditch game has been ended prematurely.");
+
+        // Reset scores or any other game state as needed
+        scoreTeamA = 0;
+        scoreTeamB = 0;
+        updateScoreboard(); // Assuming you have a method to update the scoreboard
+
+        // Remove game-related entities. This might include removing spawned Snitches, Quaffles, etc.
+        // This is an example and needs to be tailored to how you spawn and manage these entities.
+        Bukkit.getWorlds().forEach(world -> world.getEntitiesByClasses(ArmorStand.class, Item.class).forEach(entity -> {
+            if (entity.hasMetadata("Snitch") || entity.hasMetadata("Quaffle")) {
+                entity.remove();
+            }
+        }));
+    }
+
+    public boolean hasPlayerJoined(Player player) {
+        // Check if player is in the lobby or has been assigned a team
+        return lobbyPlayers.contains(player) || teamA.hasEntry(player.getName()) || teamB.hasEntry(player.getName());
+    }
+
+
+
+
+   /*   public void startGame() {
+        if (!gameRunning) {
+            gameRunning = true;
+            Bukkit.broadcastMessage(ChatColor.GREEN + "The Quidditch game has started!");
+            // Lock team modifications and perform any necessary setup.
+            setupTeams();
+            spawnInitialElements(); // Spawn Snitch, Quaffles, and Bludgers
+        } else {
+            Bukkit.broadcastMessage(ChatColor.RED + "A game is already in progress.");
+        }
+    }*/
 
 
 }
