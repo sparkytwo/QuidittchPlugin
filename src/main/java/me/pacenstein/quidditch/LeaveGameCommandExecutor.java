@@ -20,7 +20,10 @@ public class LeaveGameCommandExecutor implements CommandExecutor {
             return true;
         }
 
-        Player player = (Player) sender;
+        return handleLeaveCommand((Player) sender);
+    }
+
+    private boolean handleLeaveCommand(Player player) {
         // Remove player from the lobby and any team they might be on
         quidditchGame.removePlayerFromLobby(player);
         quidditchGame.removePlayerFromTeam(player);

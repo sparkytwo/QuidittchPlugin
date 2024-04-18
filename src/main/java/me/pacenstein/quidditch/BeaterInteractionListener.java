@@ -43,27 +43,25 @@ public class BeaterInteractionListener implements Listener {
         ItemStack itemInHand = player.getInventory().getItemInMainHand();
         ItemMeta meta = itemInHand.getItemMeta();
 
-        // Validate if the player role is Beater, they are holding a stick, and it's named "Beater Bat"
-        if (roleManager.getPlayerRole(player) == QuidditchRole.BEATER
-                && itemInHand.getType() == Material.STICK
+        if (isBeaterWithBat(player, itemInHand, meta)) {
+            player.getNearbyEntities(5, 5, 5).stream()
+                    .filter(entity -> entity instanceof Bat)
+                    .map(entity -> (Bat) entity)
+                    .forEach(bludger -> hitBludger(player, bludger));
+        }
+    }
+
+    private boolean isBeaterWithBat(Player player, ItemStack item, ItemMeta meta) {
+        return roleManager.getPlayerRole(player) == QuidditchRole.BEATER
+                && item.getType() == Material.STICK
                 && meta != null
                 && meta.hasDisplayName()
-                && meta.getDisplayName().equals(ChatColor.GOLD + "Beater Bat")) {
+                && meta.getDisplayName().equals(ChatColor.GOLD + "Beater Bat");
+    }
 
-            // Iterate over nearby entities within a 5-block radius to find Bludgers
-            player.getNearbyEntities(5, 5, 5).forEach(entity -> {
-                if (entity instanceof Bat) {
-                    Bat bludger = (Bat) entity;
-
-                    // Set the velocity towards the direction the player is looking, simulating a hit
-                    Vector direction = player.getLocation().getDirection();
-                    direction.multiply(2); // Control the force of the hit by adjusting the multiplier
-                    bludger.setVelocity(direction);
-
-                    // Optional: Play a sound for feedback, indicating the action was successful
-                    player.getWorld().playSound(player.getLocation(), org.bukkit.Sound.ENTITY_BAT_TAKEOFF, 1.0F, 1.0F);
-                }
-            });
-        }
+    private void hitBludger(Player player, Bat bludger) {
+        Vector direction = player.getLocation().getDirection().multiply(2);
+        bludger.setVelocity(direction);
+        player.getWorld().playSound(player.getLocation(), org.bukkit.Sound.ENTITY_BAT_TAKEOFF, 1.0F, 1.0F);
     }
 }

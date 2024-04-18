@@ -9,14 +9,14 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
-import java.util.Collection;
+
 import java.util.Comparator;
-import java.util.HashMap;
+import java.util.Collection;
 import java.util.function.Predicate;
 
 public class QuaffleGoalListener implements Listener {
     private JavaPlugin plugin;
-    private QuidditchGame quidditchGame; // Reference to your QuidditchGame instance
+    private QuidditchGame quidditchGame;
 
     public QuaffleGoalListener(JavaPlugin plugin, QuidditchGame quidditchGame) {
         this.plugin = plugin;
@@ -27,39 +27,33 @@ public class QuaffleGoalListener implements Listener {
     public void onPlayerMoveWithQuaffle(PlayerMoveEvent event) {
         Player player = event.getPlayer();
 
-        if (isCarryingQuaffle(player)) {
-            if (quidditchGame.isInGoal(player.getLocation(), "TeamA") || quidditchGame.isInGoal(player.getLocation(), "TeamB")) {
-                String scoringTeam = quidditchGame.getTeamForPlayer(player);
-                plugin.getServer().broadcastMessage(player.getName() + " scores for " + scoringTeam + "!");
+        if (!isCarryingQuaffle(player)) {
+            return;
+        }
 
-                // Remove Quaffle from scoring player
-                player.getInventory().removeItem(getQuaffle());
+        Location location = player.getLocation();
+        if (!quidditchGame.isInGoal(location, "TeamA") && !quidditchGame.isInGoal(location, "TeamB")) {
+            return;
+        }
 
-                // Find and give Quaffle to the nearest keeper of the scoring team
-                Player nearestKeeper = findNearestKeeper(player.getLocation(), scoringTeam);
-                if (nearestKeeper != null) {
-                    giveQuaffleToPlayer(nearestKeeper); // Use the new method to give the Quaffle
-                    plugin.getServer().broadcastMessage(nearestKeeper.getName() + " is now holding the Quaffle!");
-                }
-            }
+        String scoringTeam = quidditchGame.getTeamForPlayer(player);
+        plugin.getServer().broadcastMessage(player.getName() + " scores for " + scoringTeam + "!");
+
+        player.getInventory().removeItem(getQuaffle());
+
+        Player nearestKeeper = findNearestKeeper(location, scoringTeam);
+        if (nearestKeeper != null) {
+            giveQuaffleToPlayer(nearestKeeper);
+            plugin.getServer().broadcastMessage(nearestKeeper.getName() + " is now holding the Quaffle!");
         }
     }
 
     private Player findNearestKeeper(Location location, String teamName) {
         Collection<? extends Player> players = plugin.getServer().getOnlinePlayers();
-        Player nearestKeeper = players.stream()
+        return players.stream()
                 .filter(isKeeperOfTeam(teamName))
                 .min(Comparator.comparingDouble(p -> p.getLocation().distanceSquared(location)))
                 .orElse(null);
-
-        // Broadcast the nearest keeper's name, if found
-        if (nearestKeeper != null) {
-            plugin.getServer().broadcastMessage("Nearest keeper to the goal is: " + nearestKeeper.getName());
-        } else {
-            plugin.getServer().broadcastMessage("No keeper found for team " + teamName);
-        }
-
-        return nearestKeeper;
     }
 
     private Predicate<Player> isKeeperOfTeam(String teamName) {
@@ -69,10 +63,8 @@ public class QuaffleGoalListener implements Listener {
 
     private void giveQuaffleToPlayer(Player player) {
         ItemStack quaffle = getQuaffle();
-        HashMap<Integer, ItemStack> noSpace = player.getInventory().addItem(quaffle); // Attempt to add the item
-
-        if (!noSpace.isEmpty()) { // Check if inventory was full
-            player.getWorld().dropItemNaturally(player.getLocation(), quaffle); // Drop the Quaffle at the player's location
+        if (!player.getInventory().addItem(quaffle).isEmpty()) {
+            player.getWorld().dropItemNaturally(player.getLocation(), quaffle);
             plugin.getServer().broadcastMessage("Dropped the Quaffle at " + player.getName() + "'s location because the inventory was full.");
         }
     }

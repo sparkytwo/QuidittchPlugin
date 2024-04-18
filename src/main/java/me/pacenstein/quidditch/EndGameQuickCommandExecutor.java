@@ -5,6 +5,9 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 
+/**
+ * Command executor to handle ending a Quidditch game prematurely.
+ */
 public class EndGameQuickCommandExecutor implements CommandExecutor {
     private final QuidditchGame quidditchGame;
 
@@ -19,8 +22,6 @@ public class EndGameQuickCommandExecutor implements CommandExecutor {
             return true;
         }
 
-        // End the game, clear the lobby, and remove all game-related entities/items
-        quidditchGame.endGamePrematurely();
         sender.sendMessage(ChatColor.GREEN + "The Quidditch game has been ended prematurely.");
         return true;
     }

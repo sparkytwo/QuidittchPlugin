@@ -17,16 +17,18 @@ public class QuidditchCommandExecutor implements CommandExecutor {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player)) {
             sender.sendMessage("Only players can execute this command.");
-            return true;
+            return true;  // Return true to indicate the syntax is correct but execution isn't allowed for non-players
         }
 
-        if (command.getName().equalsIgnoreCase("joinquidditch")) {
-            Player player = (Player) sender;
-            // Now calling openTeamSelectionGUI instead of openSelectionGUI
+        return handlePlayerCommand((Player) sender, command);
+    }
+
+    private boolean handlePlayerCommand(Player player, Command command) {
+        if ("joinquidditch".equalsIgnoreCase(command.getName())) {
             quidditchGame.openTeamSelectionGUI(player);
+            player.sendMessage("Welcome to Quidditch! Please select your team.");
             return true;
         }
-
-        return false;
+        return false;  // Return false if the command is not recognized
     }
 }

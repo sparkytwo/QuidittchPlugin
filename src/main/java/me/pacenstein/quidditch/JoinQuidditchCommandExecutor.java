@@ -5,6 +5,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.ChatColor;
+
 public class JoinQuidditchCommandExecutor implements CommandExecutor {
     private final QuidditchGame quidditchGame;
 
@@ -20,24 +21,23 @@ public class JoinQuidditchCommandExecutor implements CommandExecutor {
         }
 
         Player player = (Player) sender;
+        return handleJoinCommand(player);
+    }
 
-        // Check if a game is already in progress
+    private boolean handleJoinCommand(Player player) {
         if (quidditchGame.isGameRunning()) {
             player.sendMessage(ChatColor.RED + "A game is already in progress. Please wait until it finishes.");
             return true;
         }
 
-        if (!quidditchGame.hasPlayerJoined(player)) { // Check if player has not joined
-            // Add player to the lobby if they haven't joined yet
-            quidditchGame.addPlayerToLobby(player);
-            // Open the team selection GUI for the player
-            quidditchGame.openTeamSelectionGUI(player);
-        } else {
-            // Player is already in the game
+        if (quidditchGame.hasPlayerJoined(player)) {
             player.sendMessage(ChatColor.YELLOW + "You have already joined the Quidditch game.");
+            return true;
         }
 
+        quidditchGame.addPlayerToLobby(player);
+        quidditchGame.openTeamSelectionGUI(player);
+        player.sendMessage(ChatColor.GREEN + "You have joined the Quidditch game and can now select a team.");
         return true;
     }
 }
-

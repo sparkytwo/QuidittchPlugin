@@ -19,12 +19,18 @@ public class JoinLobbyCommandExecutor implements CommandExecutor {
             sender.sendMessage("Only players can execute this command.");
             return true;
         }
-        Player player = (Player) sender;
+
+        return handlePlayerCommand((Player) sender);
+    }
+
+    private boolean handlePlayerCommand(Player player) {
         if (quidditchGame.isGameRunning()) {
             player.sendMessage(ChatColor.RED + "A game is already in progress. Please wait until it finishes.");
             return true;
         }
+
         quidditchGame.addPlayerToLobby(player);
+        player.sendMessage(ChatColor.GREEN + "You have joined the Quidditch lobby!");
         return true;
     }
 }

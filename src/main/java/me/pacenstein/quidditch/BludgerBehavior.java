@@ -31,9 +31,8 @@ public class BludgerBehavior extends BukkitRunnable {
      *
      * @param plugin      The plugin instance
      * @param bludgerBat  The bat entity representing the Bludger
-     * @param armorStand  An unused parameter in this context, potentially for future use or visual effects
      */
-    public BludgerBehavior(JavaPlugin plugin, Bat bludgerBat, ArmorStand armorStand) {
+    public BludgerBehavior(JavaPlugin plugin, Bat bludgerBat) {
         this.plugin = plugin;
         this.bludgerBat = bludgerBat;
         this.target = null; // Initialize with no target

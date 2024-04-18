@@ -23,7 +23,12 @@ import java.util.Map;
 
 public class QuidditchGame {
     private Map<Player, QuidditchRole> playerRoles = new HashMap<>();
+    private Map<Player, HogwartsHouse> playerHouseMap = new HashMap<>();
+
     private List<Player> lobbyPlayers = new ArrayList<>();
+
+    private List<HogwartsHouse> temporarySelections = new ArrayList<>();
+
     public List<Player> getLobbyPlayers() {
         return new ArrayList<>(lobbyPlayers); // Assuming lobbyPlayers is a List<Player>
     }
@@ -43,6 +48,14 @@ public class QuidditchGame {
         if (teamB.hasEntry(player.getName())) return "Team B";
         return null; }
 
+    public HogwartsHouse findHouseForPlayer(Player player) {
+        return playerHouseMap.get(player); // Returns the house or null if the player is not assigned
+    }
+
+    public void assignHouseToPlayer(Player player, HogwartsHouse house) {
+        playerHouseMap.put(player, house);
+        player.sendMessage(ChatColor.GREEN + "You have been assigned to " + HogwartsHouse.getDisplayName(house));
+    }
 
 
     private boolean gameRunning = false;
@@ -51,12 +64,14 @@ public class QuidditchGame {
     public Team teamA;
     public Team teamB;
 
+    HogwartsHouse house1 = null;
+    HogwartsHouse house2 = null;
+
     int scoreTeamA = 0;
     int scoreTeamB = 0;
 
     private Location[] teamAGoals = new Location[3];
     private Location[] teamBGoals = new Location[3];
-    private int radius = 4; // Radius of the goals
 
     private JavaPlugin plugin;
 
@@ -92,26 +107,36 @@ public class QuidditchGame {
         teamB.setPrefix("B-");
     }
 
-
-
     public void endGame(String winningTeam) {
         gameRunning = false;
-        if ("no clear winner, game ended by admin".equals(winningTeam)) {
-            Bukkit.broadcastMessage(ChatColor.GOLD + "The Quidditch game has ended without a clear winner.");
-        } else {
-            Bukkit.broadcastMessage(ChatColor.GOLD + "The Quidditch game has ended. Congratulations to " + winningTeam + "!");
+        Bukkit.broadcastMessage(ChatColor.GOLD + "The Quidditch game has ended. Congratulations to " + winningTeam + "!");
+
+        // Cleanup entities
+        World world = Bukkit.getWorlds().get(0); // Adjust if your game spans multiple worlds
+        for (Entity entity : world.getEntities()) {
+            if (entity.hasMetadata("Bludger") || entity.hasMetadata("Snitch")) {
+                entity.remove(); // Removes Bats, Armor Stands or other entities tagged as Bludgers or Snitch
+            }
         }
 
-        getAllParticipants().forEach(player -> {
-            removePlayerFromTeam(player); // Remove player from their team
-            clearPlayerQuidditchItems(player); // Clear Quidditch-related items
-            playerRoles.remove(player); // Remove their class/role
-        });
-
-        resetGameEnvironment();
-        resetScores();
-        // Additional cleanup as necessary
+        // Reset and clean up player-specific data
+        resetGame();
     }
+
+    private void resetGame() {
+        // Clear data structures, reset scores, etc.
+        playerRoles.clear();
+        playerHouseMap.clear();
+        lobbyPlayers.clear();
+        house1 = null;
+        house2 = null;
+        temporarySelections.clear();
+
+        // Optionally re-open house selection for all players
+        lobbyPlayers.forEach(this::openHouseSelectionGUI);
+    }
+
+
 
     private List<Player> getAllParticipants() {
         List<Player> participants = new ArrayList<>();
@@ -126,18 +151,6 @@ public class QuidditchGame {
         return participants;
     }
 
-    private void setupTeams() {
-        // Logic to lock teams and finalize player roles
-    }
-
-    private void spawnInitialElements() {
-        // Logic to spawn the Snitch, Quaffles, and Bludgers
-    }
-
-    private void resetGameEnvironment() {
-        // Logic to reset the game environment, including player positions and inventories
-    }
-
     public boolean isGameRunning() {
         return gameRunning;
     }
@@ -150,7 +163,6 @@ public class QuidditchGame {
             scoreTeamB += 10;
             Bukkit.broadcastMessage("Team B scores! Current score: " + scoreTeamA + "-" + scoreTeamB);
         }
-        updateScoreboard();
 
         // After scoring, find the nearest keeper and spawn a new Quaffle
         Location centerPitch = new Location(Bukkit.getWorld("quidditch"), 0, 50, 0); // Example center pitch location
@@ -164,7 +176,6 @@ public class QuidditchGame {
         }
     }
 
-
     public String determineWinner() {
         if (scoreTeamA > scoreTeamB) return "Team A";
         else if (scoreTeamB > scoreTeamA) return "Team B";
@@ -172,15 +183,10 @@ public class QuidditchGame {
     }
 
 
-
-    private void updateScoreboard() {
-        // Logic to update the visible scoreboard with current scores
+    public void setHouses(HogwartsHouse house1, HogwartsHouse house2) {
+        this.house1 = house1;
+        this.house2 = house2;
     }
-
-    private void resetScores() {
-        // Reset team scores and update the scoreboard accordingly
-    }
-
 
     public void spawnSnitch(Location location) {
         ItemStack snitchItemStack = new ItemStack(Material.GOLD_NUGGET);
@@ -189,9 +195,19 @@ public class QuidditchGame {
         snitchItemStack.setItemMeta(meta);
 
         Bukkit.broadcastMessage("The Snitch has been released!");
-        spawnFlyingItem(location, snitchItemStack);
-    }
+        final Bat bat = location.getWorld().spawn(location, Bat.class);
+        bat.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 255));
+        bat.setMetadata("Snitch", new FixedMetadataValue(plugin, true));
 
+        final ArmorStand armorStand = location.getWorld().spawn(location, ArmorStand.class);
+        armorStand.setGravity(false);
+        armorStand.setVisible(false);
+        armorStand.getEquipment().setHelmet(snitchItemStack);
+        armorStand.setCanPickupItems(false);
+        armorStand.setMetadata("Snitch", new FixedMetadataValue(plugin, true));
+
+        bat.addPassenger(armorStand);
+    }
 
 
     public void spawnFlyingItem(Location location, final ItemStack itemStack) {
@@ -265,7 +281,6 @@ public class QuidditchGame {
         }.runTaskTimer(plugin, 0, 20); // Run this check every second (20 ticks)
     }
 
-
     public boolean isInGoal(Location location, String team) {
         // Arrays to hold the center locations of the goals for teams A and B
         Location[] centersA = new Location[3];
@@ -299,22 +314,16 @@ public class QuidditchGame {
         return false; // The location is not within the radius of any of the team's goals
     }
 
-    public void assignPlayerToTeam(Player player, String teamName) {
-        if (teamName.equals("TeamA")) {
-            if (!teamA.hasEntry(player.getName())) {
-                teamB.removeEntry(player.getName()); // Remove from Team B if present
-                teamA.addEntry(player.getName());
-                player.sendMessage(ChatColor.GREEN + "You have joined Team A.");
-            }
-        } else if (teamName.equals("TeamB")) {
-            if (!teamB.hasEntry(player.getName())) {
-                teamA.removeEntry(player.getName()); // Remove from Team A if present
-                teamB.addEntry(player.getName());
-                player.sendMessage(ChatColor.GREEN + "You have joined Team B.");
-            }
+    public void assignPlayerToHouse(Player player, HogwartsHouse house) {
+        Team team = house == house1 ? teamA : teamB;
+        if (team != null) {
+            team.addEntry(player.getName());
+            playerHouseMap.put(player, house); // Make sure this is being set
+            player.sendMessage(ChatColor.GREEN + "You have joined " + HogwartsHouse.getDisplayName(house));
+        } else {
+            player.sendMessage(ChatColor.RED + "No team found for the selected house.");
         }
     }
-
 
     public void assignPlayerClass(Player player, String className) {
         QuidditchRole role;
@@ -327,9 +336,6 @@ public class QuidditchGame {
 
         playerRoles.put(player, role);
         roleManager.setPlayerRole(player, role);
-
-
-
 
         // Example: Modify this to use the role's display name if available
         player.sendMessage(ChatColor.GREEN + "You are now a " + role.name() + ". Here's your Quidditch broomstick!");
@@ -364,15 +370,44 @@ public class QuidditchGame {
     }
 
     private void equipPlayerWithTeamArmor(Player player) {
-        String teamName = getTeamForPlayer(player);
-        if (teamName == null) return; // No team assigned
+        HogwartsHouse house = findHouseForPlayer(player);
+        if (house == null) {
+            player.sendMessage(ChatColor.RED + "No house assigned. Please select a house.");
+            return;
+        }
 
-        Color armorColor = teamName.equals("Team A") ? Color.RED : Color.BLUE;
+        Color armorColor = getColorForHouse(house);
+        equipArmor(player, armorColor);
+    }
 
-        player.getInventory().setHelmet(createColoredArmor(Material.LEATHER_HELMET, armorColor));
-        player.getInventory().setChestplate(createColoredArmor(Material.LEATHER_CHESTPLATE, armorColor));
-        player.getInventory().setLeggings(createColoredArmor(Material.LEATHER_LEGGINGS, armorColor));
-        player.getInventory().setBoots(createColoredArmor(Material.LEATHER_BOOTS, armorColor));
+    private void equipArmor(Player player, Color color) {
+        ItemStack helmet = createColoredArmor(Material.LEATHER_HELMET, color);
+        ItemStack chestplate = createColoredArmor(Material.LEATHER_CHESTPLATE, color);
+        ItemStack leggings = createColoredArmor(Material.LEATHER_LEGGINGS, color);
+        ItemStack boots = createColoredArmor(Material.LEATHER_BOOTS, color);
+
+        // Ensure these are being equipped properly
+        player.getInventory().setHelmet(helmet);
+        player.getInventory().setChestplate(chestplate);
+        player.getInventory().setLeggings(leggings);
+        player.getInventory().setBoots(boots);
+
+        player.sendMessage(ChatColor.GREEN + "Your team armor has been equipped.");
+    }
+
+    private Color getColorForHouse(HogwartsHouse house) {
+        switch (house) {
+            case GRYFFINDOR:
+                return Color.RED;
+            case RAVENCLAW:
+                return Color.BLUE;
+            case HUFFLEPUFF:
+                return Color.YELLOW;
+            case SLYTHERIN:
+                return Color.GREEN;
+            default:
+                return Color.WHITE; // Fallback color
+        }
     }
 
     private ItemStack createColoredArmor(Material material, Color color) {
@@ -386,29 +421,74 @@ public class QuidditchGame {
     }
 
     public void openTeamSelectionGUI(Player player) {
-        Inventory gui = Bukkit.createInventory(null, 9, "Select Team");
-
-        // Team A selection
-        ItemStack teamAItem = new ItemStack(Material.RED_WOOL);
-        ItemMeta teamAMeta = teamAItem.getItemMeta();
-        if (teamAMeta != null) {
-            teamAMeta.setDisplayName(ChatColor.RED + "Join Team A");
-            teamAItem.setItemMeta(teamAMeta);
+        if (house1 == null || house2 == null) {
+            player.sendMessage(ChatColor.RED + "Houses are not yet selected. Please select houses first.");
+            return;
         }
 
-        // Team B selection
-        ItemStack teamBItem = new ItemStack(Material.BLUE_WOOL);
-        ItemMeta teamBMeta = teamBItem.getItemMeta();
-        if (teamBMeta != null) {
-            teamBMeta.setDisplayName(ChatColor.BLUE + "Join Team B");
-            teamBItem.setItemMeta(teamBMeta);
-        }
-
-        // Setting items in the GUI
-        gui.setItem(3, teamAItem);
-        gui.setItem(5, teamBItem);
+        Inventory gui = Bukkit.createInventory(null, 9, "Select House");
+        gui.setItem(3, createHouseItem(house1));
+        gui.setItem(5, createHouseItem(house2));
 
         player.openInventory(gui);
+    }
+
+    public void openHouseSelectionGUI(Player player) {
+        Inventory gui = Bukkit.createInventory(null, 18, "Choose Competing Houses");
+
+        // Add items for each house
+        gui.setItem(2, createHouseItem(HogwartsHouse.GRYFFINDOR));
+        gui.setItem(3, createHouseItem(HogwartsHouse.RAVENCLAW));
+        gui.setItem(4, createHouseItem(HogwartsHouse.HUFFLEPUFF));
+        gui.setItem(5, createHouseItem(HogwartsHouse.SLYTHERIN));
+
+        player.openInventory(gui);
+    }
+
+    public void addHouseSelection(Player player, HogwartsHouse house) {
+        if (temporarySelections.contains(house)) {
+            player.sendMessage(ChatColor.YELLOW + "This house has already been selected. Choose another.");
+            return;
+        }
+
+        temporarySelections.add(house);
+        if (temporarySelections.size() == 2) {
+            setHouses(temporarySelections.get(0), temporarySelections.get(1));
+            temporarySelections.clear();
+            player.closeInventory(); // Close the current GUI
+            Bukkit.broadcastMessage(ChatColor.GREEN + "The houses have been set: " + HogwartsHouse.getDisplayName(house1) + " and " + HogwartsHouse.getDisplayName(house2));
+            openTeamSelectionGUI(player); // Open the next GUI for team selection
+        } else {
+            player.sendMessage(ChatColor.GREEN + "You have selected " + HogwartsHouse.getDisplayName(house) + ". Select one more house.");
+        }
+    }
+
+    private ItemStack createHouseItem(HogwartsHouse house) {
+        Material material;
+        switch (house) {
+            case GRYFFINDOR:
+                material = Material.RED_BANNER; // Primary color red
+                break;
+            case RAVENCLAW:
+                material = Material.BLUE_BANNER; // Primary color blue
+                break;
+            case HUFFLEPUFF:
+                material = Material.YELLOW_BANNER; // Primary color yellow
+                break;
+            case SLYTHERIN:
+                material = Material.GREEN_BANNER; // Primary color green
+                break;
+            default:
+                material = Material.WHITE_BANNER; // Fallback
+        }
+
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(HogwartsHouse.getDisplayName(house));
+            item.setItemMeta(meta);
+        }
+        return item;
     }
 
     public void openClassSelectionGUI(Player player) {
@@ -457,11 +537,13 @@ public class QuidditchGame {
     }
 
     public void addPlayerToLobby(Player player) {
-        if (!lobbyPlayers.contains(player)) { // Check if the player is not already in the lobby
-            // Teleport player to the lobby area (you need to define the lobby location)
+        if (lobbyPlayers.isEmpty()) { // Check if the player is the first one in the lobby
+            lobbyPlayers.add(player);
+            openHouseSelectionGUI(player);
+            player.sendMessage(ChatColor.GREEN + "You are the first in the lobby. Please choose the competing houses.");
+        } else if (!lobbyPlayers.contains(player)) {
             lobbyPlayers.add(player);
             player.sendMessage(ChatColor.GREEN + "Welcome to the Quidditch lobby! Waiting for more players...");
-            // Consider adding a check here to start a lobby countdown if enough players have joined
         } else {
             player.sendMessage(ChatColor.YELLOW + "You are already in the lobby.");
         }
@@ -471,22 +553,6 @@ public class QuidditchGame {
         lobbyPlayers.remove(player);
         clearPlayerQuidditchItems(player);
 
-    }
-
-    public void startLobbyCountdown() {
-        new BukkitRunnable() {
-            int countdown = 30; // 30 seconds countdown
-
-            public void run() {
-                if (countdown > 0) {
-                    Bukkit.broadcastMessage(ChatColor.YELLOW + "Game starts in " + countdown + " seconds!");
-                    countdown--;
-                } else {
-                    startGame(); // Method to start the game, assign teams, teleport players, etc.
-                    this.cancel(); // Stop the countdown
-                }
-            }
-        }.runTaskTimer(plugin, 0L, 20L); // 20L = 1 second in ticks
     }
 
     public void startGame() {
@@ -526,11 +592,6 @@ public class QuidditchGame {
 
         // Clear the lobby for the next game
         lobbyPlayers.clear();
-    }
-
-    private void teleportPlayerToGameStart(Player player, Location location) {
-        // Here you can add any checks for the player's class and adjust the location if needed
-        player.teleport(location);
     }
 
     public void removePlayerFromTeam(Player player) {
@@ -595,6 +656,7 @@ public class QuidditchGame {
         Bat bat = location.getWorld().spawn(location, Bat.class);
         // Make the Bat invisible for aesthetic purposes
         bat.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 1, false, false));
+        bat.setMetadata("Bludger", new FixedMetadataValue(plugin, true)); // Mark the bat as a Bludger
 
         // Spawn an ArmorStand for visual effects, if needed
         ArmorStand armorStand = location.getWorld().spawn(location, ArmorStand.class);
@@ -605,6 +667,8 @@ public class QuidditchGame {
         armorStand.setCanPickupItems(false); // Prevent item pickup
         armorStand.setCustomName("Bludger");
         armorStand.setCustomNameVisible(true);
+        armorStand.setMetadata("Bludger", new FixedMetadataValue(plugin, true));
+
 
         // Visual effect: Set a fire charge as the head of the ArmorStand, if desired for visuals
         ItemStack fireChargeItem = new ItemStack(Material.FIRE_CHARGE);
@@ -614,28 +678,12 @@ public class QuidditchGame {
         bat.addPassenger(armorStand);
 
         // Initialize and start the Bludger behavior task, if you have a specific behavior in mind
-        new BludgerBehavior(plugin, bat, armorStand).runTaskTimer(plugin, 0L, 20L); // Adjust the period as needed
+        new BludgerBehavior(plugin, bat).runTaskTimer(plugin, 0L, 20L); // Adjust the period as needed
     }
 
-
-
-
-
-
-
-   /*   public void startGame() {
-        if (!gameRunning) {
-            gameRunning = true;
-            Bukkit.broadcastMessage(ChatColor.GREEN + "The Quidditch game has started!");
-            // Lock team modifications and perform any necessary setup.
-            setupTeams();
-            spawnInitialElements(); // Spawn Snitch, Quaffles, and Bludgers
-        } else {
-            Bukkit.broadcastMessage(ChatColor.RED + "A game is already in progress.");
-        }
-    }*/
-
-
+    public boolean isLobbyActive() {
+        return !lobbyPlayers.isEmpty();  // Returns true if the lobby is not empty
+    }
 }
 
 

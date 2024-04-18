@@ -21,60 +21,41 @@ public class QuaffleThrowListener implements Listener {
     private JavaPlugin plugin;
     private QuidditchGame quidditchGame; // Reference to the main Quidditch game class
 
-    /**
-     * Constructor for initializing the QuaffleThrowListener with a reference to the plugin and the game.
-     *
-     * @param plugin The plugin instance.
-     * @param quidditchGame The instance of the QuidditchGame containing game logic.
-     */
     public QuaffleThrowListener(JavaPlugin plugin, QuidditchGame quidditchGame) {
         this.plugin = plugin;
         this.quidditchGame = quidditchGame;
     }
 
-    /**
-     * Handles the event where a player interacts with an item, specifically looking to see if they're
-     * attempting to throw the Quaffle.
-     *
-     * @param event The player interaction event.
-     */
     @EventHandler
     public void onPlayerRightClick(PlayerInteractEvent event) {
         Player player = event.getPlayer();
 
-        // Check if the Quidditch game is currently active
         if (!quidditchGame.isGameRunning()) {
-            //player.sendMessage(ChatColor.RED + "The game is not currently running.");
-            return; // Early exit if the game is not running
+            return; // Exit early if the game is not currently active
         }
 
-        ItemStack item = player.getInventory().getItemInMainHand();
-
-        // Validate the item to ensure it's a Quaffle
-        if (isQuaffle(item)) {
-            // Clear the player's hand and notify them
-            player.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
-            player.sendMessage(ChatColor.GREEN + "You've thrown the Quaffle!");
-
-            // Drop the item in the world as the thrown Quaffle, giving it forward momentum
-            Item droppedItem = player.getWorld().dropItem(player.getLocation().add(0, 1, 0), item);
-            droppedItem.setMetadata("Quaffle", new FixedMetadataValue(plugin, true));
-            Vector playerDirection = player.getLocation().getDirection();
-            droppedItem.setVelocity(playerDirection.multiply(1.5)); // Apply forward momentum to simulate throwing
+        ItemStack itemInHand = player.getInventory().getItemInMainHand();
+        if (!isQuaffle(itemInHand)) {
+            return; // Exit early if the item in hand is not a Quaffle
         }
+
+        throwQuaffle(player, itemInHand);
     }
 
-    /**
-     * Checks if the given ItemStack is a Quaffle based on its metadata.
-     *
-     * @param item The ItemStack to check.
-     * @return true if the item is a Quaffle; false otherwise.
-     */
+    private void throwQuaffle(Player player, ItemStack quaffle) {
+        player.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
+        player.sendMessage(ChatColor.GREEN + "You've thrown the Quaffle!");
+
+        Item droppedItem = player.getWorld().dropItem(player.getLocation().add(0, 1.5, 0), quaffle);
+        droppedItem.setMetadata("Quaffle", new FixedMetadataValue(plugin, true));
+        droppedItem.setVelocity(player.getLocation().getDirection().multiply(1.5)); // Simulate throwing force
+    }
+
     private boolean isQuaffle(ItemStack item) {
-        if (item != null && item.hasItemMeta()) {
-            ItemMeta meta = item.getItemMeta();
-            return meta.hasDisplayName() && ChatColor.stripColor(meta.getDisplayName()).equalsIgnoreCase("Quaffle");
+        if (item == null || !item.hasItemMeta()) {
+            return false;
         }
-        return false;
+        ItemMeta meta = item.getItemMeta();
+        return meta.hasDisplayName() && ChatColor.stripColor(meta.getDisplayName()).equalsIgnoreCase("Quaffle");
     }
 }

@@ -1,6 +1,8 @@
 package me.pacenstein.quidditch;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
@@ -11,82 +13,82 @@ public class QuidditchPlugin extends JavaPlugin {
     private QuidditchGame quidditchGame;
     private RoleManager roleManager;
 
+    Location spectateLocation = new Location(Bukkit.getWorld("world"), -83, -20, -11); // Example coordinates
+
 
     @Override
     public void onEnable() {
-        // Load configuration files and initialize game and role management
+        initializeConfig();
+        initializeGameComponents();
+        registerCommands();
+        registerEventListeners();
+        setupGameControlCommands();
+    }
+
+    private void initializeConfig() {
         saveDefaultConfig(); // Saves the default config.yml if one doesn't exist
         reloadConfig(); // Loads the config.yml into memory for use
+    }
 
-        // Initialize the core game logic handler
+    private void initializeGameComponents() {
         quidditchGame = new QuidditchGame(this);
         quidditchGame.setup(); // Set up game environment, including teams and scoreboards
+        roleManager = new RoleManager();
+        quidditchGame.setRoleManager(roleManager); // Set the role manager to the game
+    }
 
-        // Initialize the role management system
-        RoleManager roleManager = new RoleManager();
-        quidditchGame.setRoleManager(roleManager); // Set the role manager
+    private void registerCommands() {
+        getCommand("jointeam").setExecutor(new TeamCommandExecutor(quidditchGame));
+        getCommand("leaveteam").setExecutor(new TeamCommandExecutor(quidditchGame));
+        getCommand("spawnsnitch").setExecutor(new SnitchCommandExecutor(quidditchGame));
+        getCommand("spawnquaffle").setExecutor(new QuaffleCommandExecutor(this));
+        getCommand("spawnbludger").setExecutor(new BludgerSpawnCommandExecutor(this));
+        getCommand("joinquidditch").setExecutor(new JoinQuidditchCommandExecutor(quidditchGame));
+        getCommand("leavegame").setExecutor(new LeaveGameCommandExecutor(quidditchGame));
+        getCommand("showlobby").setExecutor(new ShowLobbyCommandExecutor(quidditchGame));
+        getCommand("spectatequidditch").setExecutor(new SpectateQuidditchCommandExecutor(quidditchGame, spectateLocation));
 
-        // Register command executors for game commands
-        this.getCommand("jointeam").setExecutor(new TeamCommandExecutor(quidditchGame));
-        this.getCommand("leaveteam").setExecutor(new TeamCommandExecutor(quidditchGame));
-        //this.getCommand("joinquidditchlobby").setExecutor(new JoinLobbyCommandExecutor(quidditchGame));
+    }
 
-        // Note: RoleCommandExecutor now correctly receives both roleManager and quidditchGame
-        //this.getCommand("chooseclass").setExecutor(new RoleCommandExecutor(roleManager, quidditchGame));
-        //this.getCommand("clearclass").setExecutor(new RoleCommandExecutor(roleManager, quidditchGame));
-
-        // Register command executors for spawning game elements
-        this.getCommand("spawnsnitch").setExecutor(new SnitchCommandExecutor(quidditchGame));
-        this.getCommand("spawnquaffle").setExecutor(new QuaffleCommandExecutor(this));
-        this.getCommand("spawnbludger").setExecutor(new BludgerSpawnCommandExecutor(this));
-        // this.getCommand("joinquidditch").setExecutor(new QuidditchCommandExecutor(quidditchGame));
-        this.getCommand("joinquidditch").setExecutor(new JoinQuidditchCommandExecutor(quidditchGame));
-        this.getCommand("leavegame").setExecutor(new LeaveGameCommandExecutor(quidditchGame));
-        this.getCommand("showlobby").setExecutor(new ShowLobbyCommandExecutor(quidditchGame));
-
-
-        // Register event listeners for in-game interactions
+    private void registerEventListeners() {
         getServer().getPluginManager().registerEvents(new BeaterInteractionListener(roleManager), this);
         getServer().getPluginManager().registerEvents(new BroomstickFlightListener(), this);
-        // Note: QuaffleThrowListener registered twice - potentially by mistake
         getServer().getPluginManager().registerEvents(new QuaffleThrowListener(this, quidditchGame), this);
         getServer().getPluginManager().registerEvents(new QuidditchEventListener(this, roleManager, quidditchGame), this);
         getServer().getPluginManager().registerEvents(new GUIEventListener(quidditchGame), this);
-        
-        // Setup commands for starting and ending the game with permission checks
-        setupGameControlCommands();
+        getServer().getPluginManager().registerEvents(new PlayerHitListener(this, quidditchGame), this);
+
     }
 
     /**
      * Sets up commands for controlling the game state, including permissions checks.
      */
     private void setupGameControlCommands() {
-        this.getCommand("startgame").setExecutor((sender, command, label, args) -> {
-            if (sender.hasPermission("quidditch.startgame")) {
-                quidditchGame.startGame();
+        getCommand("startgame").setExecutor((sender, command, label, args) -> {
+            if (!sender.hasPermission("quidditch.startgame")) {
+                sender.sendMessage(ChatColor.RED + "You do not have permission to start the game.");
                 return true;
             }
-            sender.sendMessage(ChatColor.RED + "You do not have permission to start the game.");
+            quidditchGame.startGame();
             return true;
         });
 
-        this.getCommand("endgame").setExecutor((sender, command, label, args) -> {
-            if (sender.hasPermission("quidditch.endgame")) {
-                if (quidditchGame.isGameRunning()) {
-                    quidditchGame.endGame("no clear winner, game ended by admin");
-                } else {
-                    sender.sendMessage(ChatColor.RED + "There is no game currently running.");
-                }
+        getCommand("endgame").setExecutor((sender, command, label, args) -> {
+            if (!sender.hasPermission("quidditch.endgame")) {
+                sender.sendMessage(ChatColor.RED + "You do not have permission to end the game.");
                 return true;
             }
-            sender.sendMessage(ChatColor.RED + "You do not have permission to end the game.");
+            if (!quidditchGame.isGameRunning()) {
+                sender.sendMessage(ChatColor.RED + "There is no game currently running.");
+                return true;
+            }
+            quidditchGame.endGame("no clear winner, game ended by admin");
             return true;
         });
     }
 
     @Override
     public void onDisable() {
-        // Log a message when the plugin is disabled
         getLogger().info("QuidditchPlugin has been disabled.");
     }
 }
